@@ -1,34 +1,34 @@
 import asyncio
-import sys
+import json
+from sys import argv, stderr
 from time import time
 
-import serial
+from serial import Serial
 import websockets
-import json
 
-com_port = None
-com_rate = 19200
-socket_port = None
-ser = None
-
-
-try:
-	com_port = sys.argv[1]
-	socket_port = sys.argv[2]
-except IndexError as ex:
-	print(f"USAGE: {sys.argv[0]} COM_PORT SOCKET_PORT", file=sys.stderr)
-	exit(1)
+serial_baud_rate = 115200
+socket_port = 9876
 
 
 async def main():
-	with serial.Serial(com_port, com_rate, write_timeout=0, timeout=0) as ser:
+	try:
+		serial_port = argv[1]
+	except IndexError:
+		print(f"Usage: python {argv[0]} serial_port", file=stderr)
+		exit(1)
+
+	# timeout=0 and write_timeout=0 ensures that read() and write() are
+	# non-blocking. If no incoming data is available then read() returns 0
+	# bytes. if timeout=0 was not defined then read() would stop and wait for
+	# incoming data.
+	with Serial(serial_port, serial_baud_rate, timeout=0, write_timeout=0) as serial:
 		async def read_serial_to_socket(websocket):
-			if ser.in_waiting > 0:
+			if serial.in_waiting > 0:
 				msg = ""
-				b = ser.read().decode("ascii")
+				b = serial.read().decode("ascii")
 				while b != "\n":
 					msg += b
-					b = ser.read().decode("ascii")
+					b = serial.read().decode("ascii")
 				await websocket.send(msg)
 
 		async def socket_handler(websocket):
@@ -48,14 +48,16 @@ async def main():
 				buff[1] = len(pwms)  # Number of servos
 				buff[2: -1] = bytearray(pwms)  # PWMs
 				buff[-1] = sum(buff[2:-1]) % 256  # Checksum
-				ser.write(buff)
+				serial.write(buff)
 
 				await read_serial_to_socket(websocket)
 
 		async with websockets.serve(socket_handler, "localhost", socket_port):
 			await asyncio.Future()
 
-try:
-	asyncio.run(main())
-except KeyboardInterrupt:
-	exit(0)
+
+if __name__ == '__main__':
+	try:
+		asyncio.run(main())
+	except KeyboardInterrupt:
+		exit(0)
