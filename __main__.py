@@ -14,6 +14,8 @@ serial_baud_rate = 115200
 # change the port you must edit both here and in the Javascript code.
 socket_port = 8765
 
+# Maximum rate that WebSocket messages should be transfered over serial.
+messages_per_second = 50
 
 async def main():
 	# Read command line arguments.
@@ -28,6 +30,9 @@ async def main():
 	# bytes. if timeout=0 was not defined then read() would stop and wait for
 	# incoming data.
 	with Serial(serial_port, serial_baud_rate, timeout=0, write_timeout=0) as serial:
+		print(f'Connected to serial port {serial_port}')
+
+
 		async def pass_serial_to_socket(websocket):
 			"""Pass incoming serial data to the webpage via WebSocket."""
 			if serial.in_waiting > 0:
@@ -50,17 +55,19 @@ async def main():
 					wait_duration = time() - receive_time
 				await websocket.send(message)
 
-		# TODO: Determine when/how often this function is called. Does it behave
-		# as an event loop?
+
 		async def socket_handler(websocket):
+			print('Connected to web interface')
 			last_message_time = time()
+			# Main event loop. Will only advance to the next iteration when the
+			# next WebSocket message arives.
 			async for socket_message in websocket:
 				now = time()
-				# XXX: The purpose of this if-statement was not commented in the
-				# original code. Does it prevent duplicate messages or just
-				# reduce the message rate?
-				undocumented_magic_number = 0.02
-				if now - last_message_time < undocumented_magic_number:
+				# A WebSocket message is generated once per frame, the speed of
+				# which is mostly dictated by the monitor refresh rate. Here we
+				# set our own transfer rate over serial by ignoring messages.
+				message_delay = 1 / messages_per_second
+				if now - last_message_time < message_delay:
 					continue
 				last_message_time = now
 
@@ -86,6 +93,8 @@ async def main():
 				# Now that outgoing message have been handled it is time to
 				# check the incoming messages.
 				await pass_serial_to_socket(websocket)
+			print('Disconnected from web interface')
+
 
 		# Start the WebSocket server. This server is also responsible for the
 		# serial communication.
