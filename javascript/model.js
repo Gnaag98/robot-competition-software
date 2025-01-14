@@ -78,50 +78,8 @@ class Action {
     }
 }
 
-class Macro {
-    name = "";
-    actions = [];
-    running = false;
-    button = null;
-
-    constructor(name) {
-        this.name = name;
-    }
-
-    static fromJSON({name, actions, button}) {
-        let macro = new Macro(name);
-        macro.actions = actions;
-        macro.button = parseInt(button);
-        return macro;
-    }
-
-    play(i) {
-        if (i > this.actions.length - 1) {
-            this.running = false;
-            return;
-        }
-        model.setServo(this.actions[i].address, this.actions[i].pwm);
-        setTimeout(() => {
-            this.play(i + 1)
-        }, this.actions[i].delay * 1000);
-    }
-
-    run() {
-        if (this.running) {
-            return;
-        }
-        this.running = true;
-        this.play(0);
-    }
-
-    add(action) {
-        this.actions.push(action);
-    }
-}
-
 class Model {
     servos = [];
-    macros = [];
     socket = null;
     loggerCallback = console.log;
     deadzone = 0.2;
@@ -136,14 +94,6 @@ class Model {
 
     setServo(address, pwm) {
         this.servos[address].pwm = pwm;
-    }
-
-    addMacro(macro) {
-        this.macros.push(macro);
-    }
-
-    clearMacros() {
-        this.macros = [];
     }
 
     update(delta, gamepad) {
@@ -165,17 +115,6 @@ class Model {
                 }
             }
         );
-
-        this.macros.forEach(macro => {
-           if (!gamepad) {
-               return;
-           }
-           if (macro.button != null && gamepad.buttons[macro.button] != null) {
-               if (gamepad.buttons[macro.button].pressed) {
-                   macro.run();
-               }
-           }
-        });
 
         this.sendPWMs();
     }

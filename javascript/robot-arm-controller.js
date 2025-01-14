@@ -7,14 +7,12 @@ const view = new View();
 model.loggerCallback = view.log;
 
 let nextServo = 0;
-let nextMacro = 0;
 let lastUpdate = Date.now();
 
 document.getElementById('connect').addEventListener('click', () => { connect() });
 document.getElementById('load').addEventListener('change', load);
 document.getElementById('save').addEventListener('click', () => { save() });
 document.getElementById('add-servo').addEventListener('click', () => { addServo() });
-document.getElementById('add-macro').addEventListener('click', () => { addMacro() });
 
 window.addEventListener('gamepadconnected', (event) => addGamepad(event.gamepad));
 window.requestAnimationFrame(updateStatus);
@@ -50,11 +48,8 @@ function connect() {
 
 function load(event) {
     model.clearServos();
-    model.clearMacros();
     view.clearServos();
-    view.clearMacros();
     nextServo = 0;
-    nextMacro = 0;
 
     const file = event.target.files[0];
     if (file.type !== 'application/json') {
@@ -69,13 +64,11 @@ function load(event) {
 function loadSave(data) {
     let json = JSON.parse(data);
     json.servos.forEach(servo => addServo(servo));
-    json.macros.forEach(macro => addMacro(macro));
 }
 
 function save() {
     download(JSON.stringify({
-        'servos': model.servos,
-        'macros': model.macros
+        'servos': model.servos
     }, null, 4), 'save.json', 'application/json');
 }
 
@@ -107,16 +100,4 @@ function addServo(savedData = null) {
     view.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
     model.addServo(servo);
     nextServo++;
-}
-
-function addMacro(savedData = null) {
-    let macro;
-    if (savedData === null) {
-        macro = new Macro(`Macro ${nextMacro++}`);
-    } else {
-        macro = Macro.fromJSON(savedData);
-        nextMacro++;
-    }
-    model.addMacro(macro);
-    view.addMacro(macro, navigator.getGamepads()[gamepadIndex]);
 }

@@ -230,59 +230,16 @@ class View {
         });
     }
 
-    clearMacros() {
-        const macros = document.getElementById("macros").childNodes;
-        while (macros.length > 0) {
-            macros.item(0).remove();
-        }
-    }
-
-    addMacro(macro, gamepad) {
-        const macroCard = document.createElement("div");
-        macroCard.className = "card";
-
-        const header = document.createElement("div");
-        header.className = "row";
-        macroCard.appendChild(header);
-
-        const title = document.createElement("h1");
-        title.textContent = macro.name;
-        header.appendChild(title);
-
-        const playButton = document.createElement("button");
-        playButton.textContent = "Play";
-        playButton.addEventListener("click", (_) => macro.run());
-        header.appendChild(playButton);
-
-        macroCard.appendChild(this._createDropdownRow("Button:", gamepad.buttons, "Button", macro.button, button => macro.button = button));
-
-        const actions = document.createElement("div");
-        actions.className = "actions";
-        const actionsRef = macroCard.appendChild(actions);
-
-        const addButton = document.createElement("button");
-        addButton.textContent = "+";
-        addButton.addEventListener("click", (_) => actionsRef.appendChild(this._addActionRow(macro)));
-        macroCard.appendChild(addButton);
-
-        macro.actions.forEach(action => {
-            actionsRef.appendChild(this._addActionRow(macro, action))
-        });
-
-        document.getElementById("macros").appendChild(macroCard);
-    }
-
     _createLabel(text) {
         const label = document.createElement("label");
         label.textContent = text;
         return label;
     }
 
-    _addActionRow(macro, loadedAction = null) {
+    _addActionRow(loadedAction = null) {
         let action;
         if (loadedAction === null) {
             action = new Action(0, 0, 0);
-            macro.add(action);
         } else {
             action = loadedAction;
         }
