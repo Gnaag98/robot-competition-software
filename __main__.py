@@ -67,31 +67,29 @@ async def main():
 				# which is mostly dictated by the monitor refresh rate. Here we
 				# set our own transfer rate over serial by ignoring messages.
 				message_delay = 1 / messages_per_second
-				if now - last_message_time < message_delay:
-					continue
-				last_message_time = now
+				if now - last_message_time > message_delay:
+					message_json = json.loads(socket_message)
+					# Get a list of pwm values, one for each servo.
+					pwm_list = message_json['servos'].values()
+					# Stop parsing the message if there are no pwm values.
+					if len(pwm_list) < 1:
+						continue
 
-				message_json = json.loads(socket_message)
-				# Get a list of pwm values, one for each servo.
-				pwm_list = message_json['servos'].values()
-				# Stop parsing the message if there are no pwm values.
-				if len(pwm_list) < 1:
-					continue
+					pwm_bytes = bytearray(pwm_list)
 
-				pwm_bytes = bytearray(pwm_list)
+					# Send a message with a start flag, data and a checksum.
+					# TODO: Extract the message creation into a function with start
+					# flag as a parameter to allow for more message types.
+					serial_message = bytearray(3+len(pwm_list))
+					serial_message[0] = 2  # STX (Start Of Text)
+					serial_message[1] = len(pwm_bytes)  # Number of servos
+					serial_message[2: -1] = pwm_bytes  # PWM values
+					serial_message[-1] = sum(pwm_bytes) % 256  # Checksum of values
+					serial.write(serial_message)
+					last_message_time = now
 
-				# Send a message with a start flag, data and a checksum.
-				# TODO: Extract the message creation into a function with start
-				# flag as a parameter to allow for more message types.
-				serial_message = bytearray(3+len(pwm_list))
-				serial_message[0] = 2  # STX (Start Of Text)
-				serial_message[1] = len(pwm_bytes)  # Number of servos
-				serial_message[2: -1] = pwm_bytes  # PWM values
-				serial_message[-1] = sum(pwm_bytes) % 256  # Checksum of values
-				serial.write(serial_message)
 
-				# Now that outgoing message have been handled it is time to
-				# check the incoming messages.
+				# Check for incoming messages on every iteration.
 				await pass_serial_to_socket(websocket)
 			print('Disconnected from web interface')
 
