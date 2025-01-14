@@ -60,20 +60,20 @@ class Model {
         socket.addEventListener('open', _ => this.onSocketOpen(socket));
         socket.addEventListener('close', (_) => {
             this.socket = null;
-            this.loggerCallback("Disconnected!")
+            this.loggerCallback('Disconnected!')
         });
         socket.addEventListener('message', ({data}) => this.loggerCallback(data));
     }
 
     onSocketOpen(socket) {
         this.socket = socket;
-        this.loggerCallback("Connected!");
+        this.loggerCallback('Connected!');
     }
 
     sendPWMs() {
         if (this.socket != null) {
-            const data = {"servos": {}};
-            this.servos.forEach(({address, pwm}) => data["servos"][address] = Math.round(pwm));
+            const data = {'servos': {}};
+            this.servos.forEach(({address, pwm}) => data['servos'][address] = Math.round(pwm));
             this.socket.send(JSON.stringify(data));
         }
     }

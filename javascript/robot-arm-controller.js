@@ -1,3 +1,4 @@
+// TODO: Replace the singular index to allow for multiple controllers.
 let gamepadIndex;
 const buttons = [];
 const sliders = [];
@@ -30,7 +31,7 @@ function updateStatus() {
     if (gamepad) {
         for (let i = 0; i < gamepad.buttons.length; i++) {
             let val = gamepad.buttons[i];
-            buttons[i].className = 'gamepad-button' + (val.pressed ? ' pressed' : '');
+            buttons[i].className = 'gamepad__button' + (val.pressed ? ' pressed' : '');
         }
 
         for (let i = 0; i < gamepad.axes.length; i++) {
