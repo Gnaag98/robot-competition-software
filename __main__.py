@@ -12,7 +12,7 @@ import websockets
 serial_baud_rate = 115200
 # The socket port is used to communicate with the webpage using WebSocket. To
 # change the port you must edit both here and in the Javascript code.
-socket_port = 9876
+socket_port = 8765
 
 
 async def main():
