@@ -17,6 +17,7 @@ socket_port = 8765
 # Maximum rate that WebSocket messages should be transfered over serial.
 messages_per_second = 50
 
+
 async def main():
 	# Read command line arguments.
 	try:
@@ -31,6 +32,22 @@ async def main():
 	# incoming data.
 	with Serial(serial_port, serial_baud_rate, timeout=0, write_timeout=0) as serial:
 		print(f'Connected to serial port {serial_port}')
+
+
+		def serial_send_bytes(data: bytearray | list):
+			"""Send a list of bytes, or ints in the inclusive range 0-255, over serial."""
+			start_flag = 0x02
+
+			# Make space for message header, body and footer.
+			message = bytearray(2 + len(data) + 1)
+			# Message header including start flag and message body length.
+			message[0] = start_flag
+			message[1] = len(data)
+			# Message body.
+			message[2: -1] = data
+			# Message footer.
+			message[-1] = sum(data) % 256	# Checksum of body
+			serial.write(message)
 
 
 		async def pass_serial_to_socket(websocket):
@@ -71,21 +88,10 @@ async def main():
 					message_json = json.loads(socket_message)
 					# Get a list of pwm values, one for each servo.
 					pwm_list = message_json['servos'].values()
-					# Stop parsing the message if there are no pwm values.
+					# Stop parsing the message if the pwm values are missing.
 					if len(pwm_list) < 1:
 						continue
-
-					pwm_bytes = bytearray(pwm_list)
-
-					# Send a message with a start flag, data and a checksum.
-					# TODO: Extract the message creation into a function with start
-					# flag as a parameter to allow for more message types.
-					serial_message = bytearray(3+len(pwm_list))
-					serial_message[0] = 2  # STX (Start Of Text)
-					serial_message[1] = len(pwm_bytes)  # Number of servos
-					serial_message[2: -1] = pwm_bytes  # PWM values
-					serial_message[-1] = sum(pwm_bytes) % 256  # Checksum of values
-					serial.write(serial_message)
+					serial_send_bytes(pwm_list)
 					last_message_time = now
 
 
