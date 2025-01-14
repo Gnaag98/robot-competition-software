@@ -10,8 +10,13 @@ let nextServo = 0;
 let nextMacro = 0;
 let lastUpdate = Date.now();
 
-window.addEventListener("gamepadconnected", ({gamepad}) => addGamepad(gamepad));
-document.getElementById("file-selector").addEventListener('change', load);
+document.getElementById('connect').addEventListener('click', () => { connect() });
+document.getElementById('load').addEventListener('change', load);
+document.getElementById('save').addEventListener('click', () => { save() });
+document.getElementById('add-servo').addEventListener('click', () => { addServo() });
+document.getElementById('add-macro').addEventListener('click', () => { addMacro() });
+
+window.addEventListener('gamepadconnected', (event) => addGamepad(event.gamepad));
 window.requestAnimationFrame(updateStatus);
 
 function addGamepad(gamepad) {
@@ -28,7 +33,7 @@ function updateStatus() {
     if (gamepad) {
         for (let i = 0; i < gamepad.buttons.length; i++) {
             let val = gamepad.buttons[i];
-            buttons[i].className = "gamepad-button" + (val.pressed ? " pressed" : "");
+            buttons[i].className = 'gamepad-button' + (val.pressed ? ' pressed' : '');
         }
 
         for (let i = 0; i < gamepad.axes.length; i++) {
@@ -39,20 +44,8 @@ function updateStatus() {
     window.requestAnimationFrame(updateStatus);
 }
 
-function addServo(savedData = null) {
-    let servo;
-    if (savedData === null) {
-        servo = new Servo(nextServo, null);
-    } else {
-        servo = Servo.fromJSON(savedData);
-    }
-    view.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
-    model.addServo(servo);
-    nextServo++;
-}
-
 function connect() {
-    model.connect("localhost", "8765");
+    model.connect('localhost', '8765');
 }
 
 function load(event) {
@@ -64,8 +57,8 @@ function load(event) {
     nextMacro = 0;
 
     const file = event.target.files[0];
-    if (file.type !== "application/json") {
-        alert("Must be a .json savefile!");
+    if (file.type !== 'application/json') {
+        alert('Must be a .json savefile!');
         return;
     }
     const reader = new FileReader();
@@ -81,9 +74,9 @@ function loadSave(data) {
 
 function save() {
     download(JSON.stringify({
-        "servos": model.servos,
-        "macros": model.macros
-    }, null, 4), "save.json", "application/json");
+        'servos': model.servos,
+        'macros': model.macros
+    }, null, 4), 'save.json', 'application/json');
 }
 
 function download(data, filename, type) {
@@ -91,7 +84,7 @@ function download(data, filename, type) {
     if (window.navigator.msSaveOrOpenBlob) // IE10+
         window.navigator.msSaveOrOpenBlob(file, filename);
     else { // Others
-        const a = document.createElement("a"),
+        const a = document.createElement('a'),
             url = URL.createObjectURL(file);
         a.href = url;
         a.download = filename;
@@ -102,6 +95,18 @@ function download(data, filename, type) {
             window.URL.revokeObjectURL(url);
         }, 0);
     }
+}
+
+function addServo(savedData = null) {
+    let servo;
+    if (savedData === null) {
+        servo = new Servo(nextServo, null);
+    } else {
+        servo = Servo.fromJSON(savedData);
+    }
+    view.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
+    model.addServo(servo);
+    nextServo++;
 }
 
 function addMacro(savedData = null) {

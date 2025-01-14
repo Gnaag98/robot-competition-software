@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Arm Controller</title>
+    <link href="style.css" rel="stylesheet">
+    <script defer type="text/javascript" src="javascript/view.js"></script>
+    <script defer type="text/javascript" src="javascript/model.js"></script>
+    <script defer type="text/javascript" src="javascript/robot-arm-controller.js"></script>
+</head>
+
+<body>
+    <div id="menu" class="card">
+        <button id="connect" class="menu__button">Connect</button>
+        <input type="file" id="load" accept="application/json" class="visually-hidden">
+        <label for="load" class="menu__button">Load</label>
+        <button id="save" class="menu__button">Save</button>
+        <button id="add-servo" class="menu__button">Add Servo</button>
+        <button id="add-macro" class="menu__button">Add Macro</button>
+    </div>
+    <div class="card-container">
+        <div id="gamepad" class="card">
+            <h1 id="gamepad-header">Press a button to add controller</h1>
+            <div id="gamepad-buttons"></div>
+            <div id="gamepad-axes"></div>
+        </div>
+    </div>
+    <div id="servos" class="card-container"></div>
+    <div id="macros" class="card-container"></div>
+    <div id="logger" class="card"></div>
+    </body>
+</html>

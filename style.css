@@ -1,6 +1,78 @@
-body {
-    background-color: #eee;
+/* Simpler sizing */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* Remove default spacing and force explicit styling */
+* {
     margin: 0;
+    padding: 0;
+    /* font: inherit; */
+}
+
+/* Allow both dark and light mode */
+html {
+    color-scheme: dark light;
+}
+
+/* Fill screen vertically with the body */
+body {
+    min-height: 100svh;
+}
+
+:root {
+    --base: #bbb;
+    --accent: #ddd;
+    --text: #222;
+    --shadow: #808080;
+    --button: #eee;
+    --hover: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --base: #222;
+        --accent: #1d1d1d;
+        --text: #ccc;
+        --shadow: #0f0f0f;
+        --button: #111111;
+        --hover: #333;
+    }
+}
+
+.visually-hidden {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+body {
+    color: var(--text);
+    background-color: var(--base);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.menu__button {
+    border: 1px outset buttonborder;
+    border-radius: 3px;
+    padding: 2px 6px;
+    color: var(--text);
+    background-color: var(--button);
+    font-size: 1em;
+}
+
+.menu__button:hover {
+    background-color: var(--hover);
+}
+
+input.visually-hidden:is(:focus-visible) + label {
+    outline: -webkit-focus-ring-color auto 1px;
 }
 
 .card-container {
@@ -12,13 +84,13 @@ body {
 }
 
 .card {
-    background-color: #ddd;
-    padding: 0.4rem;
-    border-radius: 0.5rem;
-    box-shadow: 0.1rem 0.1rem 0.2rem gray;
-    margin: 0.2rem;
     display: flex;
     flex-direction: column;
+    margin: 0.2rem;
+    border-radius: 0.5rem;
+    padding: 0.4rem;
+    background-color: var(--accent);
+    box-shadow: 0.1rem 0.1rem 0.2rem var(--shadow);
 }
 
 .card-header {
@@ -32,7 +104,8 @@ body {
     margin: 0.1rem;
 }
 
-.card input {
+.card input,
+.menu__button {
     margin: 0.2rem;
 }
 

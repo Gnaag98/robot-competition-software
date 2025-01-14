@@ -11,9 +11,9 @@ import websockets
 # communication over USB. The baud rate set here should match what is being used
 # on the attached device (Arduino).
 serial_baud_rate = 115200
-# The socket port is used to communicate with the webpage using WebSocket. To
+# The websocket port is used to communicate with the webpage using WebSocket. To
 # change the port you must edit both here and in the Javascript code.
-socket_port = 8765
+websocket_port = 8765
 
 # Maximum rate that WebSocket messages should be transfered over serial.
 messages_per_second = 50
@@ -62,14 +62,14 @@ async def event_loop(serial: Serial, websocket):
 	"""Main event loop. Will only advance to the next iteration when the next WebSocket message arives."""
 	print('Connected to web interface')
 	last_message_time = time()
-	async for socket_message in websocket:
+	async for websocket_message in websocket:
 		now = time()
 		# A WebSocket message is generated once per frame, the speed of
 		# which is mostly dictated by the monitor refresh rate. Here we
 		# set our own transfer rate over serial by ignoring messages.
 		message_delay = 1 / messages_per_second
 		if now - last_message_time > message_delay:
-			message_json = json.loads(socket_message)
+			message_json = json.loads(websocket_message)
 			# Get a list of pwm values, one for each servo.
 			pwm_list = message_json['servos'].values()
 			# Stop parsing the message if the pwm values are missing.
@@ -85,7 +85,8 @@ async def event_loop(serial: Serial, websocket):
 
 
 async def main():
-	# Read command line arguments.
+	# Read command line arguments. argv[0] is always the command used to run the
+	# script, usually the filename, or ".".
 	try:
 		serial_port = argv[1]
 	except IndexError:
@@ -100,9 +101,14 @@ async def main():
 		print('Press CTRL+C to exit the program')
 		print(f'Connected to serial port {serial_port}')
 
+		# The websocket handler passed to serve() can only take one argument,
+		# the webserver instance. Therefore we need to bind all preceding
+		# arguments using partial().
+		websocket_handler = functools.partial(event_loop, serial)
+
 		# Start the WebSocket server. This server is also responsible for the
 		# serial communication.
-		async with websockets.serve(functools.partial(event_loop, serial), 'localhost', socket_port):
+		async with websockets.serve(websocket_handler, 'localhost', websocket_port):
 			await asyncio.get_running_loop().create_future()
 
 
