@@ -58,11 +58,10 @@ async def pass_serial_to_socket(serial: Serial, websocket):
 		await websocket.send(message)
 
 
-async def socket_handler(serial: Serial, websocket):
+async def event_loop(serial: Serial, websocket):
+	"""Main event loop. Will only advance to the next iteration when the next WebSocket message arives."""
 	print('Connected to web interface')
 	last_message_time = time()
-	# Main event loop. Will only advance to the next iteration when the
-	# next WebSocket message arives.
 	async for socket_message in websocket:
 		now = time()
 		# A WebSocket message is generated once per frame, the speed of
@@ -103,7 +102,7 @@ async def main():
 
 		# Start the WebSocket server. This server is also responsible for the
 		# serial communication.
-		async with websockets.serve(functools.partial(socket_handler, serial), 'localhost', socket_port):
+		async with websockets.serve(functools.partial(event_loop, serial), 'localhost', socket_port):
 			await asyncio.get_running_loop().create_future()
 
 
