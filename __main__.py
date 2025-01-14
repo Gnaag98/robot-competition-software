@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import json
 from sys import argv, stderr
 from time import time
@@ -18,6 +19,72 @@ socket_port = 8765
 messages_per_second = 50
 
 
+def serial_send_bytes(serial: Serial, data: bytearray | list):
+	"""Send a list of bytes, or ints in the inclusive range 0-255, over serial."""
+	start_flag = 0x02
+
+	# Make space for message header, body and footer.
+	message = bytearray(2 + len(data) + 1)
+	# Message header including start flag and message body length.
+	message[0] = start_flag
+	message[1] = len(data)
+	# Message body.
+	message[2: -1] = data
+	# Message footer.
+	message[-1] = sum(data) % 256	# Checksum of body
+	serial.write(message)
+
+
+async def pass_serial_to_socket(serial: Serial, websocket):
+	"""Pass incoming serial data to the webpage via WebSocket."""
+	if serial.in_waiting > 0:
+		# Stop reading from serial after this many idle seconds.
+		message_timeout_seconds = 1
+
+		message = ''
+		wait_duration = 0
+		# Read one character at a time until a newline is found, or
+		# until no data has been received for a while.
+		character = serial.read().decode('ascii')
+		while character != '\n' and wait_duration < message_timeout_seconds:
+			# If a character was received, reset the timeout timer and
+			# add the character to the message.
+			if character:
+				receive_time = time()
+				message += character
+			# Prepare for the next iteration.
+			character = serial.read().decode('ascii')
+			wait_duration = time() - receive_time
+		await websocket.send(message)
+
+
+async def socket_handler(serial: Serial, websocket):
+	print('Connected to web interface')
+	last_message_time = time()
+	# Main event loop. Will only advance to the next iteration when the
+	# next WebSocket message arives.
+	async for socket_message in websocket:
+		now = time()
+		# A WebSocket message is generated once per frame, the speed of
+		# which is mostly dictated by the monitor refresh rate. Here we
+		# set our own transfer rate over serial by ignoring messages.
+		message_delay = 1 / messages_per_second
+		if now - last_message_time > message_delay:
+			message_json = json.loads(socket_message)
+			# Get a list of pwm values, one for each servo.
+			pwm_list = message_json['servos'].values()
+			# Stop parsing the message if the pwm values are missing.
+			if len(pwm_list) < 1:
+				continue
+			serial_send_bytes(serial, pwm_list)
+			last_message_time = now
+
+
+		# Check for incoming messages on every iteration.
+		await pass_serial_to_socket(serial, websocket)
+	print('Disconnected from web interface')
+
+
 async def main():
 	# Read command line arguments.
 	try:
@@ -31,78 +98,12 @@ async def main():
 	# bytes. if timeout=0 was not defined then read() would stop and wait for
 	# incoming data.
 	with Serial(serial_port, serial_baud_rate, timeout=0, write_timeout=0) as serial:
+		print('Press CTRL+C to exit the program')
 		print(f'Connected to serial port {serial_port}')
-
-
-		def serial_send_bytes(data: bytearray | list):
-			"""Send a list of bytes, or ints in the inclusive range 0-255, over serial."""
-			start_flag = 0x02
-
-			# Make space for message header, body and footer.
-			message = bytearray(2 + len(data) + 1)
-			# Message header including start flag and message body length.
-			message[0] = start_flag
-			message[1] = len(data)
-			# Message body.
-			message[2: -1] = data
-			# Message footer.
-			message[-1] = sum(data) % 256	# Checksum of body
-			serial.write(message)
-
-
-		async def pass_serial_to_socket(websocket):
-			"""Pass incoming serial data to the webpage via WebSocket."""
-			if serial.in_waiting > 0:
-				# Stop reading from serial after this many idle seconds.
-				message_timeout_seconds = 1
-
-				message = ''
-				wait_duration = 0
-				# Read one character at a time until a newline is found, or
-				# until no data has been received for a while.
-				character = serial.read().decode('ascii')
-				while character != '\n' and wait_duration < message_timeout_seconds:
-					# If a character was received, reset the timeout timer and
-					# add the character to the message.
-					if character:
-						receive_time = time()
-						message += character
-					# Prepare for the next iteration.
-					character = serial.read().decode('ascii')
-					wait_duration = time() - receive_time
-				await websocket.send(message)
-
-
-		async def socket_handler(websocket):
-			print('Connected to web interface')
-			last_message_time = time()
-			# Main event loop. Will only advance to the next iteration when the
-			# next WebSocket message arives.
-			async for socket_message in websocket:
-				now = time()
-				# A WebSocket message is generated once per frame, the speed of
-				# which is mostly dictated by the monitor refresh rate. Here we
-				# set our own transfer rate over serial by ignoring messages.
-				message_delay = 1 / messages_per_second
-				if now - last_message_time > message_delay:
-					message_json = json.loads(socket_message)
-					# Get a list of pwm values, one for each servo.
-					pwm_list = message_json['servos'].values()
-					# Stop parsing the message if the pwm values are missing.
-					if len(pwm_list) < 1:
-						continue
-					serial_send_bytes(pwm_list)
-					last_message_time = now
-
-
-				# Check for incoming messages on every iteration.
-				await pass_serial_to_socket(websocket)
-			print('Disconnected from web interface')
-
 
 		# Start the WebSocket server. This server is also responsible for the
 		# serial communication.
-		async with websockets.serve(socket_handler, 'localhost', socket_port):
+		async with websockets.serve(functools.partial(socket_handler, serial), 'localhost', socket_port):
 			await asyncio.get_running_loop().create_future()
 
 
