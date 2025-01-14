@@ -9,6 +9,14 @@
     <script defer type="text/javascript" src="javascript/view.js"></script>
     <script defer type="text/javascript" src="javascript/model.js"></script>
     <script defer type="text/javascript" src="javascript/robot-arm-controller.js"></script>
+
+    <template id="gamepad">
+        <div class="card gamepad">
+            <h1 class="gamepad__header"></h1>
+            <div class="gamepad__buttons"></div>
+            <div class="gamepad__axes"></div>
+        </div>
+    </template>
 </head>
 
 <body>
@@ -20,10 +28,8 @@
         <button id="add-servo" class="menu__button">Add Servo</button>
     </div>
     <div id="gamepads" class="card-container">
-        <div id="gamepad" class="card">
-            <h1 id="gamepad__header">Press a button to add controller</h1>
-            <div id="gamepad__buttons"></div>
-            <div id="gamepad__axes"></div>
+        <div id="gamepad-placeholder" class="card gamepad">
+            <h1 class="gamepad__header">Press a button to add controller</h1>
         </div>
     </div>
     <div id="servos" class="card-container"></div>

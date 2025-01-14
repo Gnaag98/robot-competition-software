@@ -13,13 +13,19 @@ class View {
      * @param {Gamepad} gamepad 
      */
     addGamepadCard(gamepad) {
-        document.getElementById('gamepad__header').textContent = 'Gamepad';
+        // Create a new gamepad card from the template.
+        /** @type {HTMLTemplateElement} */
+        const template = document.getElementById('gamepad');
+        /** @type {DocumentFragment} */
+        const gamepadFragment = template.content.cloneNode(true);
+        gamepadFragment.querySelector('.gamepad__header').textContent = `Gamepad ${gamepad.index}`;
+
         // Add button indicators.
         for (let i in gamepad.buttons) {
             const button_element = document.createElement('span');
             button_element.textContent = i;
             button_element.className = 'gamepad__button';
-            buttons.push(document.getElementById('gamepad__buttons').appendChild(button_element));
+            buttons.push(gamepadFragment.querySelector('.gamepad__buttons').appendChild(button_element));
         }
         // Add axis indicators.
         for (let i in gamepad.axes) {
@@ -35,8 +41,12 @@ class View {
             slider.value = '0';
             slider.step = '0.01';
             sliders.push(axis_element.appendChild(slider));
-            document.getElementById('gamepad__axes').appendChild(axis_element);
+            gamepadFragment.querySelector('.gamepad__axes').appendChild(axis_element);
         }
+        // Remove the placeholder if it still exits.
+        document.getElementById('gamepad-placeholder')?.remove();
+        // Add the gamepad card to the DOM.
+        document.getElementById('gamepads').appendChild(gamepadFragment);
         
         this.servoCards.forEach(servoCard => {
             servoCard.addGamepadController(gamepad);
