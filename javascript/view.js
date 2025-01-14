@@ -3,7 +3,7 @@ class View {
 
     update(servos) {
         servos.forEach((servo) => {
-            this.servoCards.get(servo["address"].toString()).update(servo);
+            this.servoCards.get(servo["index"].toString()).update(servo);
         });
     }
 
@@ -41,23 +41,23 @@ class View {
     }
 
     addServoCard(servo, gamepad) {
-        this.servoCards.set(servo.address.toString(), this._createServoCard(servo, gamepad));
+        this.servoCards.set(servo.index.toString(), this._createServoCard(servo, gamepad));
     }
 
     _createServoCard(servo, gamepad) {
         const servoDiv = document.createElement("div");
         servoDiv.className = "servo card";
-        servoDiv.servoAddress = servo.address;
+        servoDiv.servoAddress = servo.index;
 
         const headerDiv = document.createElement("div");
         headerDiv.className = "card-header";
         const header = document.createElement("h1");
-        header.textContent = servo.servoName;
+        header.textContent = servo.name;
         headerDiv.appendChild(header);
 
-        const nameinputdiv = this._createTextInputRow("Name:",servo.servoName, (name) => { 
+        const nameinputdiv = this._createTextInputRow("Name:",servo.name, (name) => { 
             servo.name = name;
-            header.textContent = servo.servoName;
+            header.textContent = servo.name;
         });
 
         const pwmUpdate = (input, value, {pwm}) => {
@@ -66,15 +66,15 @@ class View {
         }
         const pwmDiv = this._createSliderRow("PWM", 0, 255, servo.pwm, 1, (pwm) => servo.pwm = pwm, pwmUpdate);
 
-        const minUpdate = (input, value, {endpoints}) => {
-            input.value = endpoints[0];
-            value.textContent = endpoints[0];
+        const minUpdate = (input, value, {min}) => {
+            input.value = min;
+            value.textContent = min;
         }
         const minDiv = this._createSliderRow("Min", 0, 255, servo.min, 1, (min) => servo.min = min, minUpdate);
 
-        const maxUpdate = (input, value, {endpoints}) => {
-            input.value = endpoints[1];
-            value.textContent = endpoints[1];
+        const maxUpdate = (input, value, {max}) => {
+            input.value = max;
+            value.textContent = max;
         }
         const maxDiv = this._createSliderRow("Max", 0, 255, servo.max, 1, (max) => servo.max = max, maxUpdate);
 

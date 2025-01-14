@@ -6,7 +6,6 @@ const model = new Model();
 const view = new View();
 model.loggerCallback = view.log;
 
-let nextServo = 0;
 let lastUpdate = Date.now();
 
 document.getElementById('connect').addEventListener('click', () => { connect() });
@@ -49,7 +48,6 @@ function connect() {
 function load(event) {
     model.clearServos();
     view.clearServos();
-    nextServo = 0;
 
     const file = event.target.files[0];
     if (file.type !== 'application/json') {
@@ -93,11 +91,10 @@ function download(data, filename, type) {
 function addServo(savedData = null) {
     let servo;
     if (savedData === null) {
-        servo = new Servo(nextServo, null);
+        servo = new Servo();
     } else {
         servo = Servo.fromJSON(savedData);
     }
     view.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
     model.addServo(servo);
-    nextServo++;
 }
