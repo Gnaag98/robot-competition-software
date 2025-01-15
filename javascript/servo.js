@@ -84,7 +84,7 @@ class Servo {
     }
 
     set pwm(pwm) {
-        this.#pwm = clamp(pwm, this.#pwmMin, this.#pwmMax);
+        this.#pwm = clamp(Math.round(pwm), this.#pwmMin, this.#pwmMax);
     }
 
     get min() {
@@ -92,7 +92,7 @@ class Servo {
     }
 
     set min(min) {
-        this.#pwmMin = Math.min(min, this.#pwmMax);
+        this.#pwmMin = Math.min(Math.round(min), this.#pwmMax);
         // Clamp the pwm value by triggering the setter.
         this.pwm += 0;
     }
@@ -102,7 +102,7 @@ class Servo {
     }
 
     set max(max) {
-        this.#pwmMax = Math.max(max, this.#pwmMin);
+        this.#pwmMax = Math.max(Math.round(max), this.#pwmMin);
         // Clamp the pwm value by triggering the setter.
         this.pwm += 0;
     }

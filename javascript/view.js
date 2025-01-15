@@ -18,7 +18,7 @@ class View {
         const template = document.getElementById('gamepad');
         /** @type {DocumentFragment} */
         const gamepadFragment = template.content.cloneNode(true);
-        gamepadFragment.querySelector('.gamepad__header').textContent = `Gamepad ${gamepad.index}`;
+        gamepadFragment.querySelector('.card__header').textContent = `Gamepad ${gamepad.index}`;
 
         // Add button indicators.
         for (let i in gamepad.buttons) {
@@ -58,65 +58,75 @@ class View {
     }
 
     #createServoCard(servo, gamepad) {
-        const servoDiv = document.createElement('div');
-        servoDiv.className = 'servo card';
-        servoDiv.servoAddress = servo.index;
+        // Create servo card.
+        const servoElement = document.createElement('div');
+        servoElement.className = 'servo card';
+        // Create editable header.
+        const header = document.createElement('input');
+        header.type = 'input';
+        header.placeholder = servo.name;
+        header.maxLength = 16;
+        header.oninput = () => {
+            // Update the servo name and use the placeholder as a fallback.
+            servo.name = header.value ? header.value : header.placeholder;
+        };
+        header.className = 'card__header servo__header';
+        // Create sliders.
+        const pwmRow = this.#createSliderRow('PWM', pwm => servo.pwm = pwm);
+        const minRow = this.#createSliderRow('Min', min => servo.min = min);
+        const maxRow = this.#createSliderRow('Max', max => servo.max = max);
+        // Assemble the row.
+        servoElement.appendChild(header);
+        servoElement.appendChild(pwmRow);
+        servoElement.appendChild(minRow);
+        servoElement.appendChild(maxRow);
+        // Make sure that the servo is updated when the sliders move.
+        const pwmSlider = pwmRow.querySelector('input');
+        const minSlider = minRow.querySelector('input');
+        const maxSlider = maxRow.querySelector('input');
+        pwmSlider.oninput = () => servo.pwm = parseInt(pwmSlider.value);
+        minSlider.oninput = () => servo.min = parseInt(minSlider.value);
+        maxSlider.oninput = () => servo.max = parseInt(maxSlider.value);
 
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'card-header';
-        const header = document.createElement('h1');
-        header.textContent = servo.name;
-        headerDiv.appendChild(header);
+        const pwmValueElement = pwmRow.querySelector('.slider-value');
+        const minValueElement = minRow.querySelector('.slider-value');
+        const maxValueElement = maxRow.querySelector('.slider-value');
 
-        const nameinputdiv = this.#createTextInputRow('Name:',servo.name, (name) => { 
-            servo.name = name;
-            header.textContent = servo.name;
-        });
-
-        const pwmUpdate = (input, value, {pwm}) => {
-            input.value = pwm.toString();
-            value.textContent = Math.round(pwm).toString();
+        const pwmUpdate = (servo) => {
+            pwmSlider.value = servo.pwm;
+            pwmValueElement.textContent = servo.pwm;
         }
-        const pwmDiv = this.#createSliderRow('PWM', 0, 255, servo.pwm, 1, (pwm) => servo.pwm = pwm, pwmUpdate);
-
-        const minUpdate = (input, value, {min}) => {
-            input.value = min;
-            value.textContent = min;
+        const minUpdate = (servo) => {
+            minSlider.value = servo.min;
+            minValueElement.textContent = servo.min;
         }
-        const minDiv = this.#createSliderRow('Min', 0, 255, servo.min, 1, (min) => servo.min = min, minUpdate);
-
-        const maxUpdate = (input, value, {max}) => {
-            input.value = max;
-            value.textContent = max;
+        const maxUpdate = (servo) => {
+            maxSlider.value = servo.max;
+            maxValueElement.textContent = servo.max;
         }
-        const maxDiv = this.#createSliderRow('Max', 0, 255, servo.max, 1, (max) => servo.max = max, maxUpdate);
-
-        servoDiv.appendChild(headerDiv);
-        servoDiv.appendChild(nameinputdiv);
-        servoDiv.appendChild(pwmDiv);
-        servoDiv.appendChild(minDiv);
-        servoDiv.appendChild(maxDiv);
 
 
-        servoDiv.addGamepadController = (gamepad) => {
-            servoDiv.appendChild(this.#addGamepadControllingPart(gamepad,servo));
+        servoElement.addGamepadController = (gamepad) => {
+            servoElement.appendChild(this.#addGamepadControllingPart(gamepad,servo));
         };
 
         if (gamepad) {
-            servoDiv.addGamepadController(gamepad);
+            servoElement.addGamepadController(gamepad);
         }    
 
-        servoDiv.update = (servo) => {
-            pwmDiv.update(servo);
-            minDiv.update(servo);
-            maxDiv.update(servo);
+        // XXX: Add update function to DOM element. Neat, but is there another way?
+        servoElement.update = (servo) => {
+            pwmUpdate(servo);
+            minUpdate(servo);
+            maxUpdate(servo);
         };
 
-        return document.getElementById('servos').appendChild(servoDiv);
+        return document.getElementById('servos').appendChild(servoElement);
     }
 
     #addGamepadControllingPart(gamepad, servo){
         const gamepadcontrollerDiv = document.createElement('div');
+        gamepadcontrollerDiv.className = 'servo__additional-controls';
 
         const axisSpeedDiv = this.#createInputRow('Axis speed', -5, 5, servo.axisSpeed, 0.1, (axisSpeed) => servo.axisSpeed = axisSpeed);
         const buttonSpeedDiv = this.#createInputRow('Button speed', -5, 5, servo.buttonSpeed, 0.1, (buttonSpeed) => servo.buttonSpeed = buttonSpeed);
@@ -132,52 +142,32 @@ class View {
         return gamepadcontrollerDiv;
     }
 
-    #createSliderRow(name, min, max, value, step, callback, update) {
-        const div = document.createElement('div');
-        div.className = 'sliderDiv row';
-        const label = document.createElement('label');
-        label.textContent = name + ': ';
-        const val = document.createElement('label');
-        const input = document.createElement('input');
-        input.type = 'range';
-        input.min = min.toString();
-        input.max = max.toString();
-        input.value = val.toString();
-        input.step = step.toString();
-        input.oninput = () => callback(parseInt(input.value));
-        val.textContent = input.value.toString();
+    #createSliderRow(name, onInputCallback) {
+        const row = document.createElement('div');
+        row.className = 'servo__row';
 
-        div.appendChild(label);
-        div.appendChild(val);
-        div.appendChild(input);
-        div.update = (state) => update(input, val, state);
-        return div;
-    }
+        const nameElement = document.createElement('span');
+        nameElement.textContent = name;
 
-    #createTextInputRow(name, servoName, callback) {
-        const div = document.createElement('div');
-        div.className = 'sliderDiv row';
-        const label = document.createElement('label');
-        label.textContent = name;
-        const val = document.createElement('label');
-        const input = document.createElement('input');
-        input.type = 'input';
-        input.placeholder = servoName;
-        input.size = 16;
-        input.maxLength = 16;
-        input.oninput = () => callback(input.value);
-        
-        val.textContent = input.value.toString();
+        const valueElement = document.createElement('span');
+        valueElement.className = 'slider-value';
 
-        div.appendChild(label);
-        div.appendChild(val);
-        div.appendChild(input);
-        return div;
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = 0;
+        slider.max = 255;
+        slider.step = 1;
+        slider.oninput = () => onInputCallback(parseInt(slider.value));
+
+        row.appendChild(nameElement);
+        row.appendChild(valueElement);
+        row.appendChild(slider);
+        return row;
     }
 
     #createInputRow(name, min, max, value, step, callback) {
         const div = document.createElement('div');
-        div.className = 'row';
+        div.className = 'servo__row';
         const label = document.createElement('label');
         label.textContent = name;
         const input = document.createElement('input');
@@ -196,7 +186,7 @@ class View {
 
     #createDropdownRow(name, inputs, typeName, value, callback) {
         const div = document.createElement('div');
-        div.className = 'row';
+        div.className = 'servo__row';
         const label = document.createElement('label');
         label.textContent = name;
         const input = document.createElement('select');
@@ -241,54 +231,5 @@ class View {
             val.remove();
             this.servoCards.delete(key);
         });
-    }
-
-    #createLabel(text) {
-        const label = document.createElement('label');
-        label.textContent = text;
-        return label;
-    }
-
-    #addActionRow(loadedAction = null) {
-        let action;
-        if (loadedAction === null) {
-            action = new Action(0, 0, 0);
-        } else {
-            action = loadedAction;
-        }
-
-        const row = document.createElement('div');
-        row.className = 'action-row';
-
-        row.appendChild(this.#createLabel('Address: '));
-        const address = document.createElement('input');
-        address.type = 'number';
-        address.placeholder = 'Address';
-        address.min = '0';
-        address.value = action.address.toString();
-        address.addEventListener('input', (event) => action.address = event.target.value)
-        row.appendChild(address);
-
-        row.appendChild(this.#createLabel('Value: '));
-        const pwm = document.createElement('input');
-        pwm.type = 'number';
-        pwm.placeholder = 'Value (0-255)';
-        pwm.min = '0';
-        pwm.max = '255';
-        pwm.value = action.pwm.toString();
-        pwm.addEventListener('input', (event) => action.pwm = event.target.value)
-        row.appendChild(pwm);
-
-        row.appendChild(this.#createLabel('Delay (s): '));
-        const delay = document.createElement('input');
-        delay.type = 'number';
-        delay.placeholder = 'Delay (s)';
-        delay.min = '0';
-        delay.step = '0.1';
-        delay.value = action.delay.toString();
-        delay.addEventListener('input', (event) => action.delay = event.target.value)
-        row.appendChild(delay);
-
-        return row;
     }
 }
