@@ -24,7 +24,7 @@ class View {
         const slider = row.querySelector('input');
         const valueElement = row.querySelector('.slider-value');
         slider.value = value;
-        valueElement.textContent = value;
+        valueElement.textContent = Math.round(value);
     }
 
     /**

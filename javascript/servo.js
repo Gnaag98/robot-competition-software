@@ -8,7 +8,10 @@ class Servo {
     
     #index;
     #name;
-    #pwm = 127;
+    /** 
+     * Make sure to not store the pwm as an integer as this would prevent fine
+     * changes by a gamepad. */
+    #pwm = 127.0;
     #pwmMin = 0;
     #pwmMax = 255;
     axisSpeed = 0.1;
@@ -41,7 +44,7 @@ class Servo {
         return {
             index: this.index,
             name: this.name,
-            pwm: this.pwm,
+            pwm: Math.round(this.pwm),
             min: this.min,
             max: this.max,
             axisSpeed: this.axisSpeed,
@@ -90,14 +93,16 @@ class Servo {
         }
     }
 
+    /** Decimal pwm value. */
     get pwm() {
         return this.#pwm;
     }
 
     set pwm(pwm) {
-        this.#pwm = clamp(Math.round(pwm), this.#pwmMin, this.#pwmMax);
+        this.#pwm = clamp(pwm, this.#pwmMin, this.#pwmMax);
     }
 
+    /** Integer min pwm limit. */
     get min() {
         return this.#pwmMin;
     }
@@ -108,6 +113,7 @@ class Servo {
         this.pwm += 0;
     }
 
+    /** Integer max pwm limit. */
     get max() {
         return this.#pwmMax;
     }
