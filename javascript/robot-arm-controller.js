@@ -4,8 +4,7 @@ const buttons = [];
 const sliders = [];
 
 const model = new Model();
-const view = new View();
-model.loggerCallback = view.log;
+model.loggerCallback = View.log;
 
 let lastUpdate = Date.now();
 
@@ -19,13 +18,13 @@ window.requestAnimationFrame(updateStatus);
 
 function addGamepad(gamepad) {
     gamepadIndex = gamepad.index;
-    view.addGamepadCard(gamepad);
+    View.addGamepadCard(model.servos, gamepad);
 }
 
 function updateStatus() {
     const gamepad = navigator.getGamepads()[gamepadIndex];
     model.update(Date.now() - lastUpdate, gamepad);
-    view.update();
+    View.update(model.servos);
     lastUpdate = Date.now();
 
     if (gamepad) {
@@ -47,8 +46,8 @@ function connect() {
 }
 
 function load(event) {
+    View.clearServos(model.servos);
     model.clearServos();
-    view.clearServos();
 
     const file = event.target.files[0];
     if (file.type !== 'application/json') {
@@ -96,6 +95,6 @@ function addServo(savedData = null) {
     } else {
         servo = Servo.fromJSON(savedData);
     }
-    view.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
+    View.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
     model.addServo(servo);
 }

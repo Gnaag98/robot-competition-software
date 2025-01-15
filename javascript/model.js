@@ -1,19 +1,3 @@
-class Action {
-    address;
-    pwm;
-    delay;
-
-    constructor(address, pwm, delay) {
-        this.address = address;
-        this.pwm = pwm;
-        this.delay = delay;
-    }
-
-    static fromJSON({address, pwm, delay}) {
-        return new Action(address, pwm, delay);
-    }
-}
-
 class Model {
     servos = [];
     socket = null;

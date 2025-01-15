@@ -1,17 +1,12 @@
 class View {
     /**
-     * Callback to update pwm sliders.
+     * TODO: Add description.
      * 
-     * @callback SliderUpdateCallback
-     * @returns {void}
+     * @param {Servo[]} servos 
      */
-
-    /** @type {Servo[]} */
-    servos = [];
-
-    update() {
+    static update(servos) {
         // Update the pwm sliders to reflect changes not made by the sliders.
-        for (const servo of this.servos) {
+        for (const servo of servos) {
             const servoElement = document.getElementById(servo.id);
             this.#adjustServoSlider(servoElement, 'row-pwm', servo.pwm);
             this.#adjustServoSlider(servoElement, 'row-min', servo.min);
@@ -24,7 +19,7 @@ class View {
      * 
      * @param {HTMLElement} servoElement 
      */
-    #adjustServoSlider(servoElement, rowClass, value) {
+    static #adjustServoSlider(servoElement, rowClass, value) {
         const row = servoElement.querySelector(`.${rowClass}`);
         const slider = row.querySelector('input');
         const valueElement = row.querySelector('.slider-value');
@@ -35,9 +30,10 @@ class View {
     /**
      * TODO: Add description.
      * 
+     * @param {Servo[]} servos 
      * @param {Gamepad} gamepad 
      */
-    addGamepadCard(gamepad) {
+    static addGamepadCard(servos, gamepad) {
         // Create a new gamepad card from the template.
         /** @type {HTMLTemplateElement} */
         const template = document.getElementById('gamepad');
@@ -73,18 +69,17 @@ class View {
         // Add the gamepad card to the DOM.
         document.getElementById('gamepads').appendChild(gamepadFragment);
         // Add gamepad settings to all existing servo cards.
-        for (const servo of this.servos) {
+        for (const servo of servos) {
             this.tryAddGamepadSettings(servo, gamepad);
         }
     }
 
-    addServoCard(servo, gamepad) {
-        this.servos.push(servo);
+    static addServoCard(servo, gamepad) {
         this.#createServoCard(servo, gamepad);
 
     }
 
-    #createServoCard(servo, gamepad) {
+    static #createServoCard(servo, gamepad) {
         // Create servo card.
         const servoElement = document.createElement('div');
         servoElement.id = servo.id;
@@ -127,7 +122,7 @@ class View {
         return servoElement;
     }
 
-    tryAddGamepadSettings(servo, gamepad) {
+    static tryAddGamepadSettings(servo, gamepad) {
         const servoElement = document.getElementById(servo.id);
         if (!servoElement || !gamepad) {
             return;
@@ -135,7 +130,7 @@ class View {
         servoElement.appendChild(this.#createGamepadSettings(gamepad, servo));
     }
 
-    #createGamepadSettings(gamepad, servo) {
+    static #createGamepadSettings(gamepad, servo) {
         // Create a parent fragment instead of a div so that the rows end up as
         // siblings to the other rows.
         const settingsFragment = document.createDocumentFragment();
@@ -171,7 +166,7 @@ class View {
         return settingsFragment;
     }
 
-    #createSliderRow(name, initialValue, typename) {
+    static #createSliderRow(name, initialValue, typename) {
         const row = document.createElement('div');
         row.className = `servo__row row-${typename}`;
 
@@ -195,7 +190,7 @@ class View {
         return row;
     }
 
-    #createInputRow(name, initialValue) {
+    static #createInputRow(name, initialValue) {
         const row = document.createElement('div');
         row.className = 'servo__row';
 
@@ -214,7 +209,7 @@ class View {
         return row;
     }
 
-    #createDropdownRow(name, typename, values, initialValue) {
+    static #createDropdownRow(name, typename, values, initialValue) {
         const row = document.createElement('div');
         row.className = 'servo__row';
 
@@ -246,7 +241,7 @@ class View {
         return row;
     }
 
-    log(message) {
+    static log(message) {
         const logger = document.getElementById('logger');
         const log = document.createElement('p');
         log.textContent = message;
@@ -254,11 +249,15 @@ class View {
         logger.scrollTo(0, logger.scrollHeight);
     }
 
-    clearServos() {
-        for (const servo of this.servos) {
+    /**
+     * TODO: Add description.
+     * 
+     * @param {Servo[]} servos
+     */
+    static clearServos(servos) {
+        for (const servo of servos) {
             const servoElement = document.getElementById(servo.id);
             servoElement.remove();
         }
-        this.servos = [];
     }
 }
