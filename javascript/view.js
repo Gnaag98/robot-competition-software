@@ -1,11 +1,35 @@
 class View {
-    servoCards = new Map();
-    // TODO: Interate over a list of update functions, instead of iterating over
-    // DOM elements.
-    update(servos) {
-        servos.forEach((servo) => {
-            this.servoCards.get(servo['index'].toString()).update(servo);
-        });
+    /**
+     * Callback to update pwm sliders.
+     * 
+     * @callback SliderUpdateCallback
+     * @returns {void}
+     */
+
+    /** @type {Servo[]} */
+    servos = [];
+
+    update() {
+        // Update the pwm sliders to reflect changes not made by the sliders.
+        for (const servo of this.servos) {
+            const servoElement = document.getElementById(servo.id);
+            this.#adjustServoSlider(servoElement, 'row-pwm', servo.pwm);
+            this.#adjustServoSlider(servoElement, 'row-min', servo.min);
+            this.#adjustServoSlider(servoElement, 'row-max', servo.max);
+        }
+    }
+
+    /**
+     * TODO: Add description.
+     * 
+     * @param {HTMLElement} servoElement 
+     */
+    #adjustServoSlider(servoElement, rowClass, value) {
+        const row = servoElement.querySelector(`.${rowClass}`);
+        const slider = row.querySelector('input');
+        const valueElement = row.querySelector('.slider-value');
+        slider.value = value;
+        valueElement.textContent = value;
     }
 
     /**
@@ -22,14 +46,14 @@ class View {
         gamepadFragment.querySelector('.card__header').textContent = `Gamepad ${gamepad.index}`;
 
         // Add button indicators.
-        for (let i in gamepad.buttons) {
+        for (const i in gamepad.buttons) {
             const button_element = document.createElement('span');
             button_element.textContent = i;
             button_element.className = 'gamepad__button';
             buttons.push(gamepadFragment.querySelector('.gamepad__buttons').appendChild(button_element));
         }
         // Add axis indicators.
-        for (let i in gamepad.axes) {
+        for (const i in gamepad.axes) {
             const axis_element = document.createElement('div');
             axis_element.className = 'gamepad__axis';
             const axis_index = document.createElement('span');
@@ -48,19 +72,22 @@ class View {
         document.getElementById('gamepad-placeholder')?.remove();
         // Add the gamepad card to the DOM.
         document.getElementById('gamepads').appendChild(gamepadFragment);
-        
-        this.servoCards.forEach(servoCard => {
-            servoCard.addGamepadSettings(gamepad);
-        });
+        // Add gamepad settings to all existing servo cards.
+        for (const servo of this.servos) {
+            this.tryAddGamepadSettings(servo, gamepad);
+        }
     }
 
     addServoCard(servo, gamepad) {
-        this.servoCards.set(servo.index.toString(), this.#createServoCard(servo, gamepad));
+        this.servos.push(servo);
+        this.#createServoCard(servo, gamepad);
+
     }
 
     #createServoCard(servo, gamepad) {
         // Create servo card.
         const servoElement = document.createElement('div');
+        servoElement.id = servo.id;
         servoElement.className = 'servo card';
         // Create editable header.
         const header = document.createElement('input');
@@ -73,9 +100,9 @@ class View {
         });
         header.className = 'card__header servo__header';
         // Create sliders.
-        const pwmRow = this.#createSliderRow('PWM', servo.pwm);
-        const minRow = this.#createSliderRow('Min', servo.min);
-        const maxRow = this.#createSliderRow('Max', servo.max);
+        const pwmRow = this.#createSliderRow('PWM', servo.pwm, 'pwm');
+        const minRow = this.#createSliderRow('Min', servo.min, 'min');
+        const maxRow = this.#createSliderRow('Max', servo.max, 'max');
         // Assemble the row.
         servoElement.appendChild(header);
         servoElement.appendChild(pwmRow);
@@ -92,26 +119,20 @@ class View {
         const pwmValueElement = pwmRow.querySelector('.slider-value');
         const minValueElement = minRow.querySelector('.slider-value');
         const maxValueElement = maxRow.querySelector('.slider-value');
-        // XXX: This adds functions to the DOM. Neat, but is there another way?
-        servoElement.update = servo => {
-            pwmSlider.value = servo.pwm;
-            minSlider.value = servo.min;
-            maxSlider.value = servo.max;
-            pwmValueElement.textContent = servo.pwm;
-            minValueElement.textContent = servo.min;
-            maxValueElement.textContent = servo.max;
+        // Add the servo card to the DOM.
+        document.getElementById('servos').appendChild(servoElement);
+        // Try to add gamepad settings.
+        this.tryAddGamepadSettings(servo, gamepad);
+
+        return servoElement;
+    }
+
+    tryAddGamepadSettings(servo, gamepad) {
+        const servoElement = document.getElementById(servo.id);
+        if (!servoElement || !gamepad) {
+            return;
         }
-
-        // XXX: Add function to DOM element. Neat, but is there another way?
-        servoElement.addGamepadSettings = (gamepad) => {
-            servoElement.appendChild(this.#createGamepadSettings(gamepad, servo));
-        };
-
-        if (gamepad) {
-            servoElement.addGamepadSettings(gamepad);
-        }
-
-        return document.getElementById('servos').appendChild(servoElement);
+        servoElement.appendChild(this.#createGamepadSettings(gamepad, servo));
     }
 
     #createGamepadSettings(gamepad, servo) {
@@ -150,9 +171,9 @@ class View {
         return settingsFragment;
     }
 
-    #createSliderRow(name, initialValue) {
+    #createSliderRow(name, initialValue, typename) {
         const row = document.createElement('div');
-        row.className = 'servo__row';
+        row.className = `servo__row row-${typename}`;
 
         const label = document.createElement('span');
         label.textContent = name;
@@ -210,7 +231,7 @@ class View {
         }
         dropdown.appendChild(defaultOption);
         // Add all other options.
-        for (let i in values) {
+        for (const i in values) {
             const option = document.createElement('option');
             option.value = i;
             option.text = `${typename}: ${i}`;
@@ -233,11 +254,11 @@ class View {
         logger.scrollTo(0, logger.scrollHeight);
     }
 
-    // TODO: Refactor.
     clearServos() {
-        this.servoCards.forEach((servoCard, servoIndex) => {
-            servoCard.remove();
-            this.servoCards.delete(servoIndex);
-        });
+        for (const servo of this.servos) {
+            const servoElement = document.getElementById(servo.id);
+            servoElement.remove();
+        }
+        this.servos = [];
     }
 }

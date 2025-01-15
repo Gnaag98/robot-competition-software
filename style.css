@@ -167,7 +167,7 @@ input[type='range'] {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    width: 15rem;
+    width: 16rem;
 }
 
 .servo__header {

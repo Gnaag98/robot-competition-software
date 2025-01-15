@@ -25,7 +25,7 @@ function addGamepad(gamepad) {
 function updateStatus() {
     const gamepad = navigator.getGamepads()[gamepadIndex];
     model.update(Date.now() - lastUpdate, gamepad);
-    view.update(model.servos);
+    view.update();
     lastUpdate = Date.now();
 
     if (gamepad) {

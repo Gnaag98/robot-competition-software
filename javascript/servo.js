@@ -71,6 +71,11 @@ class Servo {
         return this.#index;
     }
 
+    /** Return the id user on the corresponding HTML element. */
+    get id() {
+        return `servo-${this.index}`;
+    }
+
     get name() {
         return this.#name;
     }
