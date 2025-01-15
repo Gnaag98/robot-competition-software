@@ -30,23 +30,29 @@ class Model {
     }
 
     /**
-     * TODO: Move servos and send data to server.
+     * Update values based on the gamepad axes and button data.
      * 
-     * @param {number} deltaTime Time in milliseconds since last update.
-     * @param {Gamepad} gamepad 
+     * @param {Gamepad} gamepad Readonly representation of the gamepad as it was
+     * when it was last fetched using its ID.
+     * @param {number} deltaTime Time in milliseconds since the last frame.
      */
-    update(deltaTime, gamepad) {
-        this.#moveServos(deltaTime, gamepad);
+    handleGamepadInput(gamepad, deltaTime) {
+        this.#moveServos(gamepad, deltaTime);
+    }
+
+    /** Send data over WebSocket. */
+    send() {
         this.#sendServoData();
     }
 
     /**
-     * TODO: Use gamepad input to update servos.
+     * Use gamepad input to update servos.
      * 
+     * @param {Gamepad} gamepad Readonly representation of the gamepad as it was
+     * when it was last fetched using its ID.
      * @param {number} deltaTime Time in milliseconds since last update.
-     * @param {Gamepad} gamepad 
      */
-    #moveServos(deltaTime, gamepad) {
+    #moveServos(gamepad, deltaTime) {
         if (!gamepad) {
             return;
         }

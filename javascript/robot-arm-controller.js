@@ -2,49 +2,67 @@
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
 let gamepadIndex;
-const buttons = [];
-const sliders = [];
+/** @type {HTMLInputElement[]} */
+
+// TODO: Stop storing these elements and find them using querySelector when needed.
+const buttonElements = [];
+/** @type {HTMLInputElement[]} */
+const sliderElements = [];
 
 const model = new Model();
 model.onMessage = View.log;
 
-let lastUpdate = Date.now();
+let lastFrameTime = Date.now();
 
-document.getElementById('connect').addEventListener('click', () => { connect() });
+// Make menu buttons interactive.
+document.getElementById('connect').addEventListener('click', () => {
+    model.connect('localhost', '8765');
+});
 document.getElementById('load').addEventListener('change', load);
 document.getElementById('save').addEventListener('click', () => { save() });
 document.getElementById('add-servo').addEventListener('click', () => { addServo() });
+// Listen for gamepads connecting.
+window.addEventListener('gamepadconnected', event => addGamepad(event.gamepad));
+// Start the main loop that should run on each frame.
+window.requestAnimationFrame(mainLoop);
 
-window.addEventListener('gamepadconnected', (event) => addGamepad(event.gamepad));
-window.requestAnimationFrame(updateStatus);
+function mainLoop() {
+    const timeNow = Date.now();
+    // Time since the last frame.
+    const deltaTime = timeNow - lastFrameTime;
+    // Get a snapshot of the gamepad.
+    const gamepad = navigator.getGamepads()[gamepadIndex];
+    // Respond to gamepad input.
+    model.handleGamepadInput(gamepad, deltaTime);
+    // Update the 
+    View.update(model.servos);
+    model.send();
+    
+    if (gamepad) {
+        for (const buttonIndex in gamepad.buttons) {
+            const button = gamepad.buttons[buttonIndex];
+            const buttonElement = buttonElements[buttonIndex];
+            if (button.pressed) {
+                buttonElement.classList.add('pressed');
+            } else {
+                buttonElement.classList.remove('pressed');
+            }
+        }
+
+        for (const axisIndex in gamepad.axes) {
+            const axis = gamepad.axes[axisIndex];
+            const sliderElement = sliderElements[axisIndex];
+            sliderElement.value = axis;
+        }
+    }
+    // Continue the loop on the next frame.
+    lastFrameTime = timeNow;
+    window.requestAnimationFrame(mainLoop);
+}
 
 function addGamepad(gamepad) {
     gamepadIndex = gamepad.index;
     View.addGamepadCard(model.servos, gamepad);
-}
-
-function updateStatus() {
-    const gamepad = navigator.getGamepads()[gamepadIndex];
-    model.update(Date.now() - lastUpdate, gamepad);
-    View.update(model.servos);
-    lastUpdate = Date.now();
-
-    if (gamepad) {
-        for (let i = 0; i < gamepad.buttons.length; i++) {
-            let val = gamepad.buttons[i];
-            buttons[i].className = 'gamepad__button' + (val.pressed ? ' pressed' : '');
-        }
-
-        for (let i = 0; i < gamepad.axes.length; i++) {
-            sliders[i].value = gamepad.axes[i];
-        }
-    }
-
-    window.requestAnimationFrame(updateStatus);
-}
-
-function connect() {
-    model.connect('localhost', '8765');
 }
 
 function load(event) {

@@ -43,21 +43,22 @@ class View {
 
         // Add button indicators.
         for (const i in gamepad.buttons) {
-            const button_element = document.createElement('input');
-            button_element.placeholder = i;
-            button_element.maxLength = 2;
-            button_element.className = 'gamepad__button';
-            buttons.push(gamepadFragment.querySelector('.gamepad__buttons').appendChild(button_element));
+            const buttonElement = document.createElement('input');
+            buttonElement.placeholder = i;
+            buttonElement.maxLength = 2;
+            buttonElement.className = 'gamepad__button';
+            gamepadFragment.querySelector('.gamepad__buttons').appendChild(buttonElement);
+            buttonElements.push(buttonElement);
         }
         // Add axis indicators.
         for (const i in gamepad.axes) {
-            const axis_element = document.createElement('div');
-            axis_element.className = 'gamepad__axis';
+            const axisElement = document.createElement('div');
+            axisElement.className = 'gamepad__axis';
             const axis_name = document.createElement('input');
             axis_name.type = 'text';
             axis_name.placeholder = i;
             axis_name.maxLength = 2;
-            axis_element.appendChild(axis_name);
+            axisElement.appendChild(axis_name);
             const slider = document.createElement('input');
             slider.type = 'range';
             slider.min = '-1';
@@ -65,8 +66,9 @@ class View {
             slider.value = '0';
             slider.step = '0.01';
             slider.tabIndex = -1;
-            sliders.push(axis_element.appendChild(slider));
-            gamepadFragment.querySelector('.gamepad__axes').appendChild(axis_element);
+            axisElement.appendChild(slider);
+            sliderElements.push(slider);
+            gamepadFragment.querySelector('.gamepad__axes').appendChild(axisElement);
         }
         // Remove the placeholder if it still exits.
         document.getElementById('gamepad-placeholder')?.remove();
