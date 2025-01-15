@@ -1,8 +1,24 @@
 class Model {
+    onMessage = console.log;
+    /** @type {WebSocket | null} */
+    #socket = null;
+    /** @type {Servo[]} */
     servos = [];
-    socket = null;
-    loggerCallback = console.log;
-    deadzone = 0.2;
+    /** Set the deadzone large enough to prevent axis drift. */
+    #gamepadAxisDeadzone = 0.2;
+
+    connect(address, port) {
+        const socket = new WebSocket(`ws://${address}:${port}`);
+        socket.addEventListener('open', () => {
+            this.#socket = socket;
+            this.onMessage('Connected!');
+        });
+        socket.addEventListener('close', () => {
+            this.#socket = null;
+            this.onMessage('Disconnected!')
+        });
+        socket.addEventListener('message', event => this.onMessage(event.data));
+    }
 
     addServo(servo) {
         this.servos.push(servo);
@@ -13,53 +29,59 @@ class Model {
         Servo.resetIndices();
     }
 
-    setServo(address, pwm) {
-        this.servos[address].pwm = pwm;
+    /**
+     * TODO: Move servos and send data to server.
+     * 
+     * @param {number} deltaTime Time in milliseconds since last update.
+     * @param {Gamepad} gamepad 
+     */
+    update(deltaTime, gamepad) {
+        this.#moveServos(deltaTime, gamepad);
+        this.#sendServoData();
     }
 
-    update(delta, gamepad) {
-        this.servos.forEach(servo => {
-                if (!gamepad) {
-                    return;
-                }
-                if (servo.axis != null && gamepad.axes[servo.axis] != null) {
-                    const input = gamepad.axes[servo.axis];
-                    if (Math.abs(input) > this.deadzone) {
-                        servo.move(input * servo.axisSpeed * delta);
-                    }
-                }
-                if (servo.buttonAdd != null && gamepad.buttons[servo.buttonAdd] != null) {
-                    servo.move(gamepad.buttons[servo.buttonAdd].value * servo.buttonSpeed * delta);
-                }
-                if (servo.buttonRemove != null && gamepad.buttons[servo.buttonRemove] != null) {
-                    servo.move(-gamepad.buttons[servo.buttonRemove].value * servo.buttonSpeed * delta);
+    /**
+     * TODO: Use gamepad input to update servos.
+     * 
+     * @param {number} deltaTime Time in milliseconds since last update.
+     * @param {Gamepad} gamepad 
+     */
+    #moveServos(deltaTime, gamepad) {
+        if (!gamepad) {
+            return;
+        }
+        for (const servo of this.servos) {
+            const axisInput = gamepad.axes[servo.axis];
+            if (axisInput != undefined) {
+                if (Math.abs(axisInput) > this.#gamepadAxisDeadzone) {
+                    servo.move(axisInput * servo.axisSpeed * deltaTime);
                 }
             }
-        );
-
-        this.sendPWMs();
-    }
-
-    connect(address, port) {
-        const socket = new WebSocket(`ws://${address}:${port}`);
-        socket.addEventListener('open', _ => this.onSocketOpen(socket));
-        socket.addEventListener('close', (_) => {
-            this.socket = null;
-            this.loggerCallback('Disconnected!')
-        });
-        socket.addEventListener('message', ({data}) => this.loggerCallback(data));
-    }
-
-    onSocketOpen(socket) {
-        this.socket = socket;
-        this.loggerCallback('Connected!');
-    }
-
-    sendPWMs() {
-        if (this.socket != null) {
-            const data = {'servos': {}};
-            this.servos.forEach(({address, pwm}) => data['servos'][address] = Math.round(pwm));
-            this.socket.send(JSON.stringify(data));
+            const addInput = gamepad.buttons[servo.buttonAdd];
+            if (addInput != undefined) {
+                servo.move(addInput.value * servo.buttonSpeed * deltaTime);
+            }
+            const removeInput = gamepad.buttons[servo.buttonRemove];
+            if (removeInput != undefined) {
+                servo.move(-removeInput.value * servo.buttonSpeed * deltaTime);
+            }
         }
+    }
+
+    /**
+     * Send all servo PWM values to webserver.
+     */
+    #sendServoData() {
+        if (this.#socket == null || this.#socket.readyState != WebSocket.OPEN) {
+            return;
+        }
+
+        const message = {
+            'servos': {}
+        };
+        for (const servo of this.servos) {
+            message['servos'][servo.index] = Math.round(servo.pwm);
+        }
+        this.#socket.send(JSON.stringify(message));
     }
 }

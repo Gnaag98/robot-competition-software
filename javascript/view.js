@@ -5,7 +5,7 @@ class View {
      * @param {Servo[]} servos 
      */
     static update(servos) {
-        // Update the pwm sliders to reflect changes not made by the sliders.
+        // Update the sliders to reflect changes made elsewhere.
         for (const servo of servos) {
             const servoElement = document.getElementById(servo.id);
             this.#adjustServoSlider(servoElement, 'row-pwm', servo.pwm);

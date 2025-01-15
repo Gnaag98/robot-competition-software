@@ -6,7 +6,7 @@ const buttons = [];
 const sliders = [];
 
 const model = new Model();
-model.loggerCallback = View.log;
+model.onMessage = View.log;
 
 let lastUpdate = Date.now();
 

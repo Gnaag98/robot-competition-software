@@ -15,9 +15,12 @@ class Servo {
     #pwmMin = 0;
     #pwmMax = 255;
     axisSpeed = 0.1;
+    /** @type {number | null} */
     axis = null;
     buttonSpeed = 0.1;
+    /** @type {number | null} */
     buttonAdd = null;
+    /** @type {number | null} */
     buttonRemove = null;
 
     constructor(index, name) {
