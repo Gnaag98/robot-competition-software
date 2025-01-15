@@ -1,3 +1,5 @@
+// The Gamepad object represents the state of the gamepad at a specific point in
+// time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
 let gamepadIndex;
 const buttons = [];

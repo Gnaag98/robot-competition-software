@@ -22,6 +22,8 @@ class Servo {
             this.#index = Servo.#nextServoIndex++;
         } else {
             this.#index = index;
+            // Make sure the next index is unique.
+            Servo.#nextServoIndex = Math.max(Servo.#nextServoIndex, index + 1);
         }
 
         if (name === undefined) {
@@ -71,7 +73,7 @@ class Servo {
         return this.#index;
     }
 
-    /** Return the id user on the corresponding HTML element. */
+    /** Return the id used for the corresponding HTML element. */
     get id() {
         return `servo-${this.index}`;
     }
