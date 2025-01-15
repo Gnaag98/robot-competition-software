@@ -31,6 +31,10 @@ class Servo {
         }
     }
 
+    static resetIndices() {
+        Servo.#nextServoIndex = 0;
+    }
+
     toJSON() {
         return {
             index: this.index,

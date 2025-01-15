@@ -175,12 +175,6 @@ input[type='range'] {
     background: none;
 }
 
-.servo__additional-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
 .servo__row {
     display: flex;
     justify-content: space-between;
@@ -190,27 +184,15 @@ input[type='range'] {
     flex-grow: 1;
 }
 
-.servo__row input {
+.servo__row input[type='range'] {
     margin-left: 0.5rem;
 }
 
-.servo__row input:hover {
-    cursor: pointer;
-}
-
-.servo__row .dropdown {
+.servo__row .input[type='number'] {
     width: 3rem;
 }
 
 #logger {
     height: 10rem;
     overflow: scroll;
-}
-
-#logger p {
-    margin: 0;
-}
-
-.action-row input {
-    width: 3rem;
 }

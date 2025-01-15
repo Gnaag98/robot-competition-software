@@ -26,6 +26,7 @@ class Model {
 
     clearServos() {
         this.servos = [];
+        Servo.resetIndices();
     }
 
     setServo(address, pwm) {
