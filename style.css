@@ -27,8 +27,10 @@ body {
     --accent: #ddd;
     --text: #222;
     --shadow: #808080;
-    --button: #eee;
+    --menu-button: #eee;
     --hover: #ddd;
+
+    --gamepad-button: #aaa;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,8 +39,10 @@ body {
         --accent: #1d1d1d;
         --text: #ccc;
         --shadow: #0f0f0f;
-        --button: #111111;
+        --menu-button: #111111;
         --hover: #333;
+
+        --gamepad-button: #333;
     }
 }
 
@@ -55,7 +59,7 @@ body {
 body {
     color: var(--text);
     background-color: var(--base);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: sans-serif;
 }
 
 .menu__button {
@@ -63,7 +67,7 @@ body {
     border-radius: 3px;
     padding: 2px 6px;
     color: var(--text);
-    background-color: var(--button);
+    background-color: var(--menu-button);
     font-size: 1em;
 }
 
@@ -73,6 +77,11 @@ body {
 
 input.visually-hidden:is(:focus-visible) + label {
     outline: -webkit-focus-ring-color auto 1px;
+}
+
+.input-header {
+    border: none;
+    background: none;
 }
 
 .card-container {
@@ -111,47 +120,62 @@ input.visually-hidden:is(:focus-visible) + label {
 }
 
 .gamepad {
-    width: 11rem;
     gap: 0.5rem;
+}
+
+.gamepad .card__header {
+    width: 17ch;
 }
 
 .gamepad__buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(1.2rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(2.5ch, 1fr));
     gap: 0.125rem;
     justify-items: center;
 }
 
 .gamepad__button {
-    background-color: gray;
     width: 100%;
     aspect-ratio: 1/1;
+    border: none;
+    border-radius: 0.2rem;
+    background: none;
+    background-color: var(--gamepad-button);
+    font-family: monospace;
     text-align: center;
     align-content: center;
-    border-radius: 0.2rem;
 }
 
-.gamepad__buttons .pressed {
+.gamepad__button.pressed {
     background-color: darkblue;
     color: azure;
+}
+
+.gamepad__axes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .gamepad__axis {
     display: flex;
     gap: 0.25rem;
-    margin-inline: 0.25rem;
 }
 
-.gamepad__axis span {
-    align-content: center;
+.gamepad__axis input[type=text] {
+    width: 2.5ch;
+    border: none;
+    background: none;
+    font-family: monospace;
+    text-align: center;
 }
 
-.gamepad__axis input {
+.gamepad__axis input[type=range] {
     width: 100%;
     pointer-events: none;
 }
 
-input[type='range'] {
+input[type=range] {
     margin: auto 0;
     appearance: none;
     height: 0.5rem;
@@ -167,12 +191,11 @@ input[type='range'] {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    width: 16rem;
+    width: 17rem;
 }
 
-.servo__header {
-    border: none;
-    background: none;
+.servo .card__header {
+    margin-bottom: 0.25rem;
 }
 
 .servo__row {
@@ -184,12 +207,16 @@ input[type='range'] {
     flex-grow: 1;
 }
 
-.servo__row input[type='range'] {
+.servo input[type=range] {
     margin-left: 0.5rem;
 }
 
-.servo__row .input[type='number'] {
-    width: 3rem;
+.servo input[type=number] {
+    width: 6ch;
+}
+
+.servo select {
+    width: 12ch;
 }
 
 #logger {

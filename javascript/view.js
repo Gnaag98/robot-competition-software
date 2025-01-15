@@ -39,12 +39,13 @@ class View {
         const template = document.getElementById('gamepad');
         /** @type {DocumentFragment} */
         const gamepadFragment = template.content.cloneNode(true);
-        gamepadFragment.querySelector('.card__header').textContent = `Gamepad ${gamepad.index}`;
+        gamepadFragment.querySelector('.card__header').placeholder = `Gamepad ${gamepad.index}`;
 
         // Add button indicators.
         for (const i in gamepad.buttons) {
-            const button_element = document.createElement('span');
-            button_element.textContent = i;
+            const button_element = document.createElement('input');
+            button_element.placeholder = i;
+            button_element.maxLength = 2;
             button_element.className = 'gamepad__button';
             buttons.push(gamepadFragment.querySelector('.gamepad__buttons').appendChild(button_element));
         }
@@ -52,15 +53,18 @@ class View {
         for (const i in gamepad.axes) {
             const axis_element = document.createElement('div');
             axis_element.className = 'gamepad__axis';
-            const axis_index = document.createElement('span');
-            axis_index.textContent = i;
-            axis_element.appendChild(axis_index);
+            const axis_name = document.createElement('input');
+            axis_name.type = 'text';
+            axis_name.placeholder = i;
+            axis_name.maxLength = 2;
+            axis_element.appendChild(axis_name);
             const slider = document.createElement('input');
             slider.type = 'range';
             slider.min = '-1';
             slider.max = '1';
             slider.value = '0';
             slider.step = '0.01';
+            slider.tabIndex = -1;
             sliders.push(axis_element.appendChild(slider));
             gamepadFragment.querySelector('.gamepad__axes').appendChild(axis_element);
         }
@@ -86,14 +90,13 @@ class View {
         servoElement.className = 'servo card';
         // Create editable header.
         const header = document.createElement('input');
-        header.type = 'input';
         header.placeholder = servo.name;
         header.maxLength = 16;
         header.addEventListener('input', () => {
             // Update the servo name and use the placeholder as a fallback.
             servo.name = header.value ? header.value : header.placeholder;
         });
-        header.className = 'card__header servo__header';
+        header.className = 'card__header input-header';
         // Create sliders.
         const pwmRow = this.#createSliderRow('PWM', servo.pwm, 'pwm');
         const minRow = this.#createSliderRow('Min', servo.min, 'min');
