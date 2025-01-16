@@ -2,11 +2,12 @@ function clamp(val, min, max) {
     return Math.min(Math.max(val, min), max);
 }
 
-
 class Servo {
     static #nextServoIndex = 0;
     
+    /** @type {number} */
     #index;
+    /** @type {string} */
     #name;
     /** 
      * Make sure to not store the pwm as an integer as this would prevent fine
@@ -23,6 +24,10 @@ class Servo {
     /** @type {number | null} */
     buttonRemove = null;
 
+    /**
+     * @param {number} index - unique servo index.
+     * @param {string} name - default/user defined servo name.
+     */
     constructor(index, name) {
         if (index === undefined) {
             this.#index = Servo.#nextServoIndex++;

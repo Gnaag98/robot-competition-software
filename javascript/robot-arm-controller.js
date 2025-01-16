@@ -10,6 +10,7 @@ const buttonElements = [];
 const sliderElements = [];
 
 const model = new Model();
+const view = new View();
 model.onMessage = View.log;
 
 let lastFrameTime = Date.now();
@@ -34,10 +35,11 @@ function mainLoop() {
     const gamepad = navigator.getGamepads()[gamepadIndex];
     // Respond to gamepad input.
     model.handleGamepadInput(gamepad, deltaTime);
-    // Update the 
-    View.update(model.servos);
+    // Update all views.
+    view.update(model.servos);
     model.send();
     
+    // XXX: This should be done in the gamepad view.
     if (gamepad) {
         for (const buttonIndex in gamepad.buttons) {
             const button = gamepad.buttons[buttonIndex];
@@ -62,11 +64,11 @@ function mainLoop() {
 
 function addGamepad(gamepad) {
     gamepadIndex = gamepad.index;
-    View.addGamepadCard(model.servos, gamepad);
+    view.addGamepad(model.servos, gamepad);
 }
 
 function load(event) {
-    View.clearServos(model.servos);
+    view.clearServos(model.servos);
     model.clearServos();
 
     const file = event.target.files[0];
@@ -115,6 +117,6 @@ function addServo(savedData = null) {
     } else {
         servo = Servo.fromJSON(savedData);
     }
-    View.addServoCard(servo, navigator.getGamepads()[gamepadIndex]);
+    view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
     model.addServo(servo);
 }
