@@ -2,12 +2,6 @@
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
 let gamepadIndex;
-/** @type {HTMLInputElement[]} */
-
-// TODO: Stop storing these elements and find them using querySelector when needed.
-const buttonElements = [];
-/** @type {HTMLInputElement[]} */
-const sliderElements = [];
 
 const model = new Model();
 const view = new View();
@@ -36,35 +30,11 @@ function mainLoop() {
     // Respond to gamepad input.
     model.handleGamepadInput(gamepad, deltaTime);
     // Update all views.
-    view.update(model.servos);
+    view.update(model.servos, gamepad);
     model.send();
-    
-    // XXX: This should be done in the gamepad view.
-    if (gamepad) {
-        for (const buttonIndex in gamepad.buttons) {
-            const button = gamepad.buttons[buttonIndex];
-            const buttonElement = buttonElements[buttonIndex];
-            if (button.pressed) {
-                buttonElement.classList.add('pressed');
-            } else {
-                buttonElement.classList.remove('pressed');
-            }
-        }
-
-        for (const axisIndex in gamepad.axes) {
-            const axis = gamepad.axes[axisIndex];
-            const sliderElement = sliderElements[axisIndex];
-            sliderElement.value = axis;
-        }
-    }
     // Continue the loop on the next frame.
     lastFrameTime = timeNow;
     window.requestAnimationFrame(mainLoop);
-}
-
-function addGamepad(gamepad) {
-    gamepadIndex = gamepad.index;
-    view.addGamepad(model.servos, gamepad);
 }
 
 function load(event) {
@@ -117,6 +87,11 @@ function addServo(savedData = null) {
     } else {
         servo = Servo.fromJSON(savedData);
     }
-    view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
     model.addServo(servo);
+    view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
+}
+
+function addGamepad(gamepad) {
+    gamepadIndex = gamepad.index;
+    view.addGamepad(model.servos, gamepad);
 }

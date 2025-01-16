@@ -8,16 +8,12 @@ class ServoView {
     #root;
     
     /**
-     * TODO: Do we want these parameters.
+     * Create a visual representation of the servo and attach it to the DOM.
      * 
      * @param {Servo} servo 
-     * @param {Gamepad} gamepad 
      */
-    constructor(servo, gamepad) {
-        // TODO: Call all create functions and store the root element. (and return it/attach it?)
-
-        this.#root = this.#createCard(servo, gamepad);
-        // XXX: I think the main view should be responsible for adding it to the DOM.
+    constructor(servo) {
+        this.#root = this.#createCardWithoutGamepadSettings(servo);
         document.getElementById('servos').appendChild(this.#root);
     }
 
@@ -37,10 +33,10 @@ class ServoView {
         if (!gamepad) {
             return;
         }
-        this.#root.appendChild(this.#createSettings(servo, gamepad));
+        this.#root.appendChild(this.#createGamepadSettings(servo, gamepad));
     }
 
-    #createCard(servo, gamepad) {
+    #createCardWithoutGamepadSettings(servo) {
         // Create servo card.
         const servoElement = document.createElement('div');
         servoElement.id = servo.id;
@@ -64,22 +60,21 @@ class ServoView {
         servoElement.appendChild(minRow);
         servoElement.appendChild(maxRow);
         // Adjust the servo when the sliders move.
-        const pwmSlider = pwmRow.querySelector('.slider-input');
-        const minSlider = minRow.querySelector('.slider-input');
-        const maxSlider = maxRow.querySelector('.slider-input');
-        pwmSlider.addEventListener('input', () => servo.pwm = parseInt(pwmSlider.value));
-        minSlider.addEventListener('input', () => servo.min = parseInt(minSlider.value));
-        maxSlider.addEventListener('input', () => servo.max = parseInt(maxSlider.value));
-        // Enable the sliders to be updated indirectly, e.g., from a gamepad.
-        const pwmValueElement = pwmRow.querySelector('.slider-value');
-        const minValueElement = minRow.querySelector('.slider-value');
-        const maxValueElement = maxRow.querySelector('.slider-value');
+        pwmRow.querySelector('.slider-input').addEventListener('input', event => {
+            servo.pwm = parseInt(event.target.value);
+        });
+        minRow.querySelector('.slider-input').addEventListener('input', event => {
+            servo.min = parseInt(event.target.value);
+        });
+        maxRow.querySelector('.slider-input').addEventListener('input', event => {
+            servo.max = parseInt(event.target.value);
+        });
         // Add the servo card to the DOM.
         document.getElementById('servos').appendChild(servoElement);
         return servoElement;
     }
 
-    #createSettings(servo, gamepad) {
+    #createGamepadSettings(servo, gamepad) {
         // Create a parent fragment instead of a div so that the rows end up as
         // siblings to the other rows.
         const settingsFragment = document.createDocumentFragment();
@@ -215,17 +210,34 @@ class GamepadView {
     #root;
     
     /**
-     * TODO: Do we want these parameters.
+     * Create a visual representation of the servo and attach it to the DOM.
      * 
      * @param {Gamepad} gamepad 
      */
     constructor(gamepad) {
-        // TODO: Call all create functions and store the root element. (and return it/attach it?)
-
         this.#root = this.#createCard(gamepad);
-        // Add the gamepad card to the DOM.
-        // XXX: I think the main view should be responsible for adding it to the DOM.
         document.getElementById('gamepads').appendChild(this.#root);
+    }
+
+    update(gamepad) {
+        // Update buttons.
+        const buttonElements = this.#root.querySelectorAll('.gamepad__button');
+        for (const buttonIndex in gamepad.buttons) {
+            const button = gamepad.buttons[buttonIndex];
+            const buttonElement = buttonElements[buttonIndex];
+            if (button.pressed) {
+                buttonElement.classList.add('pressed');
+            } else {
+                buttonElement.classList.remove('pressed');
+            }
+        }
+        // Update axes.
+        const sliderElements = this.#root.querySelectorAll('input[type=range]');
+        for (const axisIndex in gamepad.axes) {
+            const axis = gamepad.axes[axisIndex];
+            const sliderElement = sliderElements[axisIndex];
+            sliderElement.value = axis;
+        }
     }
 
     /** Remove the visual representation of the gamepad from the DOM. */
@@ -253,7 +265,6 @@ class GamepadView {
             buttonElement.maxLength = 2;
             buttonElement.className = 'gamepad__button';
             gamepadFragment.querySelector('.gamepad__buttons').appendChild(buttonElement);
-            buttonElements.push(buttonElement);
         }
         // Add axis indicators.
         for (const i in gamepad.axes) {
@@ -272,7 +283,6 @@ class GamepadView {
             slider.step = '0.01';
             slider.tabIndex = -1;
             axisElement.appendChild(slider);
-            sliderElements.push(slider);
             gamepadFragment.querySelector('.gamepad__axes').appendChild(axisElement);
         }
         // Remove the placeholder if it still exits.
@@ -303,7 +313,7 @@ class View {
      * @param {Gamepad} gamepad 
      */
     addServo(servo, gamepad) {
-        const view = new ServoView(servo, gamepad);
+        const view = new ServoView(servo);
         view.tryAddGamepadSettings(servo, gamepad);
         this.#servoViews.push(view);
     }
@@ -324,11 +334,22 @@ class View {
         this.#gamepadViews.push(gamepadView);
     }
 
-    update(servos) {
+    /**
+     * TODO: Add description.
+     * 
+     * @param {Servo[]} servos 
+     * @param {Gamepad} gamepad 
+     */
+    update(servos, gamepad) {
+        // Update servo views.
         for (const i in servos) {
             const servo = servos[i];
             const servoView = this.#servoViews[i];
             servoView.update(servo);
+        }
+        // Update gamepad views.
+        for (const view of this.#gamepadViews) {
+            view.update(gamepad);
         }
     }
 
