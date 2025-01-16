@@ -1,3 +1,42 @@
+/** @param {MouseEvent} event */
+const connectOnClick = event => {
+    // Remove the ability to double click the button.
+    event.target.removeEventListener('click', connectOnClick);
+    // Connect to the server.
+    connection.connect('localhost', 8765);
+}
+/** @param {MouseEvent} event */
+const disconnectOnClick = event => {
+    // Remove the ability to double click the button.
+    event.target.removeEventListener('click', disconnectOnClick);
+    // Disconnect to the server.
+    connection.disconnect();
+}
+/**
+ * Enable disconnecting from the server by switching to and activating the disconnect button.
+ */
+const onConnected = () => {
+    View.log('Connected!');
+    // Show the disconnect button instead and enable it.
+    const connectButton = document.getElementById('connect');
+    const disconnectButton = document.getElementById('disconnect');
+    connectButton.hidden = true;
+    disconnectButton.hidden = false;
+    disconnectButton.addEventListener('click', disconnectOnClick);
+}
+/**
+ * Enable connecting from the server by switching to and activating the connect button.
+ */
+const onDisconnected = () => {
+    View.log('Disconnected!');
+    // Show the connect button instead and enable it.
+    const connectButton = document.getElementById('connect');
+    const disconnectButton = document.getElementById('disconnect');
+    connectButton.hidden = false;
+    disconnectButton.hidden = true;
+    connectButton.addEventListener('click', connectOnClick);
+}
+
 // The Gamepad object represents the state of the gamepad at a specific point in
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
@@ -5,22 +44,24 @@ let gamepadIndex;
 
 const model = new Model();
 const view = new View();
-model.onMessage = View.log;
+const connection = new ServerConnection(onConnected, onDisconnected, View.log);
 
 let lastFrameTime = Date.now();
 
-// Make menu buttons interactive.
-document.getElementById('connect').addEventListener('click', () => {
-    model.connect('localhost', '8765');
-});
+
+// Make the visible menu buttons interactive.
+document.getElementById('connect').addEventListener('click', connectOnClick);
 document.getElementById('load').addEventListener('change', load);
 document.getElementById('save').addEventListener('click', () => { save() });
-document.getElementById('add-servo').addEventListener('click', () => { addServo() });
+document.getElementById('add-servo').addEventListener('click', () => {
+    addServo();
+});
 // Listen for gamepads connecting.
 window.addEventListener('gamepadconnected', event => addGamepad(event.gamepad));
 // Start the main loop that should run on each frame.
 window.requestAnimationFrame(mainLoop);
 
+/** Main loop that runs on every frame. */
 function mainLoop() {
     const timeNow = Date.now();
     // Time since the last frame.
@@ -31,10 +72,26 @@ function mainLoop() {
     model.handleGamepadInput(gamepad, deltaTime);
     // Update all views.
     view.update(model.servos, gamepad);
-    model.send();
+    // Send data to the server.
+    send();
     // Continue the loop on the next frame.
     lastFrameTime = timeNow;
     window.requestAnimationFrame(mainLoop);
+}
+
+/** Send data to the server. */
+function send() {
+    /** Mapping from servo index to servo integer pwm value.
+     * @type {Object.<string, number>}
+     */
+    const servoMap = {};
+    for (const servo of model.servos) {
+        servoMap[servo.index] = Math.round(servo.pwm);
+    }
+    const message = {
+        'servos': servoMap
+    };
+    connection.send(message);
 }
 
 function load(event) {
@@ -80,13 +137,8 @@ function download(data, filename, type) {
     }
 }
 
-function addServo(savedData = null) {
-    let servo;
-    if (savedData === null) {
-        servo = new Servo();
-    } else {
-        servo = Servo.fromJSON(savedData);
-    }
+function addServo(servoJson = null) {
+    const servo = servoJson == null ? new Servo() : Servo.fromJSON(servoJson);
     model.addServo(servo);
     view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
 }
