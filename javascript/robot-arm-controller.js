@@ -1,44 +1,7 @@
-/** @param {MouseEvent} event */
-const connectOnClick = event => {
-    // Remove the ability to double click the button.
-    event.target.removeEventListener('click', connectOnClick);
-    // Connect to the server.
-    connection.connect('localhost', 8765);
-}
-/** @param {MouseEvent} event */
-const disconnectOnClick = event => {
-    // Remove the ability to double click the button.
-    event.target.removeEventListener('click', disconnectOnClick);
-    // Disconnect to the server.
-    connection.disconnect();
-}
-/**
- * Enable disconnecting from the server by switching to and activating the disconnect button.
- */
-const onConnected = () => {
-    View.log('Connected!');
-    // Show the disconnect button instead and enable it.
-    const connectButton = document.getElementById('connect');
-    const disconnectButton = document.getElementById('disconnect');
-    connectButton.hidden = true;
-    disconnectButton.hidden = false;
-    disconnectButton.addEventListener('click', disconnectOnClick);
-}
-/**
- * Enable connecting from the server by switching to and activating the connect button.
- */
-const onDisconnected = () => {
-    View.log('Disconnected!');
-    // Show the connect button instead and enable it.
-    const connectButton = document.getElementById('connect');
-    const disconnectButton = document.getElementById('disconnect');
-    connectButton.hidden = false;
-    disconnectButton.hidden = true;
-    connectButton.addEventListener('click', connectOnClick);
-}
-
 /** Set the deadzone large enough to prevent axis drift. */
 const gamepadAxisDeadzone = 0.2;
+
+const view = new View();
 
 /** @type {Servo[]} */
 const servos = [];
@@ -46,27 +9,32 @@ const servos = [];
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
 let gamepadIndex;
-
-const view = new View();
-const connection = new ServerConnection(onConnected, onDisconnected, View.log);
+/** @type {ServerConnection} */
+let connection;
 
 let lastFrameTime = Date.now();
 
+// Run the setup, and in turn the loop.
+setup();
 
-// Make the visible menu buttons interactive.
-document.getElementById('connect').addEventListener('click', connectOnClick);
-document.getElementById('load').addEventListener('change', load);
-document.getElementById('save').addEventListener('click', () => { save() });
-document.getElementById('add-servo').addEventListener('click', () => {
-    addServo();
-});
-// Listen for gamepads connecting.
-window.addEventListener('gamepadconnected', event => addGamepad(event.gamepad));
-// Start the main loop that should run on each frame.
-window.requestAnimationFrame(mainLoop);
+/** Initialize things and start the loop. */
+function setup() {
+    connection = new ServerConnection(onConnected, onDisconnected, View.log);
+    // Make the visible menu buttons interactive.
+    document.getElementById('connect').addEventListener('click', connectOnClick);
+    document.getElementById('load').addEventListener('change', load);
+    document.getElementById('save').addEventListener('click', save);
+    document.getElementById('add-servo').addEventListener('click', () => {
+        addServo();
+    });
+    // Start listening for gamepads connecting.
+    window.addEventListener('gamepadconnected', event => addGamepad(event.gamepad));
+    // Start the main loop that should run on each frame.
+    window.requestAnimationFrame(loop);
+}
 
 /** Main loop that runs on every frame. */
-function mainLoop() {
+function loop() {
     const timeNow = Date.now();
     // Time since the last frame.
     const deltaTime = timeNow - lastFrameTime;
@@ -80,7 +48,46 @@ function mainLoop() {
     send();
     // Continue the loop on the next frame.
     lastFrameTime = timeNow;
-    window.requestAnimationFrame(mainLoop);
+    window.requestAnimationFrame(loop);
+}
+
+/** @param {MouseEvent} event */
+function connectOnClick(event) {
+    // Remove the ability to double click the button.
+    event.target.removeEventListener('click', connectOnClick);
+    // Connect to the server.
+    connection.connect('localhost', 8765);
+}
+/** @param {MouseEvent} event */
+function disconnectOnClick(event) {
+    // Remove the ability to double click the button.
+    event.target.removeEventListener('click', disconnectOnClick);
+    // Disconnect to the server.
+    connection.disconnect();
+}
+/**
+ * Enable disconnecting from the server by switching to and activating the disconnect button.
+ */
+function onConnected() {
+    View.log('Connected!');
+    // Show the disconnect button instead and enable it.
+    const connectButton = document.getElementById('connect');
+    const disconnectButton = document.getElementById('disconnect');
+    connectButton.hidden = true;
+    disconnectButton.hidden = false;
+    disconnectButton.addEventListener('click', disconnectOnClick);
+}
+/**
+ * Enable connecting from the server by switching to and activating the connect button.
+ */
+function onDisconnected() {
+    View.log('Disconnected!');
+    // Show the connect button instead and enable it.
+    const connectButton = document.getElementById('connect');
+    const disconnectButton = document.getElementById('disconnect');
+    connectButton.hidden = false;
+    disconnectButton.hidden = true;
+    connectButton.addEventListener('click', connectOnClick);
 }
 
 /** Send data to the server. */
@@ -98,45 +105,42 @@ function send() {
     connection.send(message);
 }
 
+/** @param {Event} event */
 function load(event) {
     clearServos();
+    /** @type {File} */
     const file = event.target.files[0];
     if (file.type !== 'application/json') {
         alert('Must be a .json savefile!');
         return;
     }
     const reader = new FileReader();
-    reader.addEventListener('loadend', _ => loadSave(reader.result));
+    // When the file is loaded, parse the content.
+    reader.addEventListener('loadend', () => {
+        const json = JSON.parse(reader.result);
+        for (const servo of json['servos']) {
+            addServo(servo);
+        }
+    });
+    // Start loading the file.
     reader.readAsText(file);
 }
 
-function loadSave(data) {
-    let json = JSON.parse(data);
-    json.servos.forEach(servo => addServo(servo));
-}
-
 function save() {
-    download(JSON.stringify({
+    const json = {
         'servos': servos
-    }, null, 4), 'save.json', 'application/json');
-}
-
-function download(data, filename, type) {
-    const file = new Blob([data], {type: type});
-    if (window.navigator.msSaveOrOpenBlob) // IE10+
-        window.navigator.msSaveOrOpenBlob(file, filename);
-    else { // Others
-        const a = document.createElement('a'),
-            url = URL.createObjectURL(file);
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 0);
-    }
+    };
+    const jsonString = JSON.stringify(json, null, 4);
+    // Create a file and corresponding url.
+    const file = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(file);
+    // Create a download link and click it to download the file.
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'save.json';
+    link.click();
+    // Remove the url to free up memory.
+    window.URL.revokeObjectURL(url);
 }
 
 function addServo(servoJson = null) {
