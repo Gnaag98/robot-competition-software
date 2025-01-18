@@ -74,6 +74,8 @@ class ServoView {
         return servoElement;
     }
 
+    // TODO: Refactor this function. The settings should all be there at
+    // creation, and when a gamepad is connected then the options are populated.
     #createGamepadSettings(servo, gamepad) {
         // Create a parent fragment instead of a div so that the rows end up as
         // siblings to the other rows.
@@ -253,9 +255,9 @@ class GamepadView {
     #createCard(gamepad) {
         // Create a new gamepad card from the template.
         /** @type {HTMLTemplateElement} */
-        const template = document.getElementById('gamepad');
+        const gamepadTemplate = document.getElementById('gamepad-template');
         /** @type {DocumentFragment} */
-        const gamepadFragment = template.content.cloneNode(true);
+        const gamepadFragment = gamepadTemplate.content.cloneNode(true);
         gamepadFragment.querySelector('.card__header').placeholder = `Gamepad ${gamepad.index}`;
 
         // Add button indicators.
@@ -267,23 +269,16 @@ class GamepadView {
             gamepadFragment.querySelector('.gamepad__buttons').appendChild(buttonElement);
         }
         // Add axis indicators.
+        /** @type {HTMLTemplateElement} */
+        const axisTemplate = document.getElementById('gamepad-axis-template');
         for (const i in gamepad.axes) {
-            const axisElement = document.createElement('div');
-            axisElement.className = 'gamepad__axis';
-            const axis_name = document.createElement('input');
-            axis_name.type = 'text';
-            axis_name.placeholder = i;
-            axis_name.maxLength = 2;
-            axisElement.appendChild(axis_name);
-            const slider = document.createElement('input');
-            slider.type = 'range';
-            slider.min = '-1';
-            slider.max = '1';
+            /** @type {DocumentFragment} */
+            const axisFragment = axisTemplate.content.cloneNode(true);
+            const name = axisFragment.querySelector('input[type=text]');
+            const slider = axisFragment.querySelector('input[type=range]');
+            name.placeholder = i;
             slider.value = '0';
-            slider.step = '0.01';
-            slider.tabIndex = -1;
-            axisElement.appendChild(slider);
-            gamepadFragment.querySelector('.gamepad__axes').appendChild(axisElement);
+            gamepadFragment.querySelector('.gamepad__axes').appendChild(axisFragment);
         }
         // Remove the placeholder if it still exits.
         document.getElementById('gamepad-placeholder')?.remove();
