@@ -37,12 +37,16 @@ const onDisconnected = () => {
     connectButton.addEventListener('click', connectOnClick);
 }
 
+/** Set the deadzone large enough to prevent axis drift. */
+const gamepadAxisDeadzone = 0.2;
+
+/** @type {Servo[]} */
+const servos = [];
 // The Gamepad object represents the state of the gamepad at a specific point in
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
 let gamepadIndex;
 
-const model = new Model();
 const view = new View();
 const connection = new ServerConnection(onConnected, onDisconnected, View.log);
 
@@ -69,9 +73,9 @@ function mainLoop() {
     // Get a snapshot of the gamepad.
     const gamepad = navigator.getGamepads()[gamepadIndex];
     // Respond to gamepad input.
-    model.handleGamepadInput(gamepad, deltaTime);
+    moveServos(gamepad, deltaTime);
     // Update all views.
-    view.update(model.servos, gamepad);
+    view.update(servos, gamepad);
     // Send data to the server.
     send();
     // Continue the loop on the next frame.
@@ -85,7 +89,7 @@ function send() {
      * @type {Object.<string, number>}
      */
     const servoMap = {};
-    for (const servo of model.servos) {
+    for (const servo of servos) {
         servoMap[servo.index] = Math.round(servo.pwm);
     }
     const message = {
@@ -95,9 +99,7 @@ function send() {
 }
 
 function load(event) {
-    view.clearServos(model.servos);
-    model.clearServos();
-
+    clearServos();
     const file = event.target.files[0];
     if (file.type !== 'application/json') {
         alert('Must be a .json savefile!');
@@ -115,7 +117,7 @@ function loadSave(data) {
 
 function save() {
     download(JSON.stringify({
-        'servos': model.servos
+        'servos': servos
     }, null, 4), 'save.json', 'application/json');
 }
 
@@ -138,12 +140,47 @@ function download(data, filename, type) {
 }
 
 function addServo(servoJson = null) {
-    const servo = servoJson == null ? new Servo() : Servo.fromJSON(servoJson);
-    model.addServo(servo);
+    const servo = servoJson ? Servo.fromJSON(servoJson) : new Servo();
+    servos.push(servo);
     view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
 }
 
 function addGamepad(gamepad) {
     gamepadIndex = gamepad.index;
-    view.addGamepad(model.servos, gamepad);
+    view.addGamepad(servos, gamepad);
+}
+
+/**
+ * Use gamepad input to update servos.
+ * 
+ * @param {Gamepad} gamepad Readonly representation of the gamepad as it was
+ * when it was last fetched using its ID.
+ * @param {number} deltaTime Time in milliseconds since last update.
+ */
+function moveServos(gamepad, deltaTime) {
+    if (!gamepad) {
+        return;
+    }
+    for (const servo of servos) {
+        const axisInput = gamepad.axes[servo.axis];
+        if (axisInput != undefined) {
+            if (Math.abs(axisInput) > gamepadAxisDeadzone) {
+                servo.move(axisInput * servo.axisSpeed * deltaTime);
+            }
+        }
+        const addInput = gamepad.buttons[servo.buttonAdd];
+        if (addInput != undefined) {
+            servo.move(addInput.value * servo.buttonSpeed * deltaTime);
+        }
+        const removeInput = gamepad.buttons[servo.buttonRemove];
+        if (removeInput != undefined) {
+            servo.move(-removeInput.value * servo.buttonSpeed * deltaTime);
+        }
+    }
+}
+
+function clearServos() {
+    servos = [];
+    Servo.resetIndices();
+    view.clearServos();
 }
