@@ -13,8 +13,68 @@ class ServoView {
      * @param {Servo} servo 
      */
     constructor(servo) {
-        this.#root = this.#createCardWithoutGamepadSettings(servo);
-        document.getElementById('servos').appendChild(this.#root);
+        // Create a new card from the template.
+        /** @type {HTMLTemplateElement} */
+        const template = document.getElementById('servo-template');
+        /** @type {DocumentFragment} */
+        const fragment = template.content.cloneNode(true);
+        const card = fragment.firstElementChild;
+        // Store the element to reference it more easily later.
+        this.#root = card;
+
+        // Initialize the card header.
+        const header = card.querySelector('.card__header');
+        header.placeholder = `Servo ${servo.index}`;
+        header.value = servo.name;
+        header.addEventListener('input', () => {
+            servo.name = header.value;
+        });
+        
+        // Initialize slider values.
+        const pwmInput = this.#updateSlider('pwm', servo.pwm);
+        const minInput = this.#updateSlider('min', servo.min);
+        const maxInput = this.#updateSlider('max', servo.max);
+        pwmInput.addEventListener('input', event => {
+            servo.pwm = parseInt(event.target.value);
+        });
+        minInput.addEventListener('input', event => {
+            servo.min = parseInt(event.target.value);
+        });
+        maxInput.addEventListener('input', event => {
+            servo.max = parseInt(event.target.value);
+        });
+
+        // Initialize speed inputs.
+        /** @type {HTMLInputElement} */
+        const axisSpeedInput = card.querySelector('.axis-speed');
+        /** @type {HTMLInputElement} */
+        const buttonSpeedInput = card.querySelector('.button-speed');
+        axisSpeedInput.value = servo.axisSpeed;
+        buttonSpeedInput.value = servo.buttonSpeed;
+        axisSpeedInput.addEventListener('input', event => {
+            servo.axisSpeed = event.target.value
+        });
+        buttonSpeedInput.addEventListener('input', event => {
+            servo.buttonSpeed = event.target.value
+        });
+        
+        // Initialize gamepad bindings.
+        const bindingAxis = card.querySelector('.binding-axis');
+        const bindingincrease = card.querySelector('.binding-increase');
+        const bindingdecrease = card.querySelector('.binding-decrease');
+        const toIntOrNull = string => string ? parseInt(string) : null;
+        bindingAxis.addEventListener('change', event => {
+            servo.axis.inputIndex = toIntOrNull(event.target.value);
+        });
+        bindingincrease.addEventListener('change', event => {
+            servo.buttonIncrease.inputIndex = toIntOrNull(event.target.value);
+        });
+        bindingdecrease.addEventListener('change', event => {
+            servo.buttonDecrease.inputIndex = toIntOrNull(event.target.value);
+        });
+
+        // Add card to DOM.
+        document.getElementById('servos').appendChild(card);
     }
 
     /** Remove the visual representation of the servo from the DOM. */
@@ -22,196 +82,79 @@ class ServoView {
         this.#root.remove();
     }
 
+    /**
+     * Update the sliders to reflect changes made elsewhere.
+     * 
+     * @param {Servo} servo 
+     */
     update(servo) {
-        // Update the sliders to reflect changes made elsewhere.
-        this.#updateSlider('row-pwm', servo.pwm);
-        this.#updateSlider('row-min', servo.min);
-        this.#updateSlider('row-max', servo.max);
-    }
-
-    tryAddGamepadSettings(servo, gamepad) {
-        if (!gamepad) {
-            return;
-        }
-        this.#root.appendChild(this.#createGamepadSettings(servo, gamepad));
-    }
-
-    #createCardWithoutGamepadSettings(servo) {
-        // Create servo card.
-        const servoElement = document.createElement('div');
-        servoElement.id = servo.id;
-        servoElement.className = 'servo card';
-        // Create editable header.
-        const header = document.createElement('input');
-        header.placeholder = `Servo ${servo.index}`;
-        header.value = servo.name;
-        header.maxLength = 16;
-        header.addEventListener('input', () => {
-            servo.name = header.value;
-        });
-        header.className = 'card__header input-header';
-        // Create sliders.
-        const pwmRow = this.#createSliderRow('PWM', servo.pwm, 'pwm');
-        const minRow = this.#createSliderRow('Min', servo.min, 'min');
-        const maxRow = this.#createSliderRow('Max', servo.max, 'max');
-        // Assemble the row.
-        servoElement.appendChild(header);
-        servoElement.appendChild(pwmRow);
-        servoElement.appendChild(minRow);
-        servoElement.appendChild(maxRow);
-        // Adjust the servo when the sliders move.
-        pwmRow.querySelector('.slider-input').addEventListener('input', event => {
-            servo.pwm = parseInt(event.target.value);
-        });
-        minRow.querySelector('.slider-input').addEventListener('input', event => {
-            servo.min = parseInt(event.target.value);
-        });
-        maxRow.querySelector('.slider-input').addEventListener('input', event => {
-            servo.max = parseInt(event.target.value);
-        });
-        // Add the servo card to the DOM.
-        document.getElementById('servos').appendChild(servoElement);
-        return servoElement;
+        this.#updateSlider('pwm', servo.pwm);
+        this.#updateSlider('min', servo.min);
+        this.#updateSlider('max', servo.max);
     }
 
     /**
-     * TODO: Refactor this function. The settings should all be there at
-     * creation, and when a gamepad is connected then the options are populated.
+     * Update the bindings between gamepads and the servo.
      * 
      * @param {Servo} servo
      * @param {Gamepad} gamepad 
      */
-    #createGamepadSettings(servo, gamepad) {
-        // Create a parent fragment instead of a div so that the rows end up as
-        // siblings to the other rows.
-        const settingsFragment = document.createDocumentFragment();
-        // Create number inputs.
-        const axisSpeedRow = this.#createInputRow('Axis speed', servo.axisSpeed);
-        const buttonSpeedRow = this.#createInputRow('Button speed', servo.buttonSpeed);
-        // Create dropdown inputs.
-        const axisRow = this.#createDropdownRow('Axis', 'Axis', gamepad.axes, servo.axis);
-        const buttonIncreaseRow = this.#createDropdownRow('Button +', 'Button', gamepad.buttons, servo.buttonAdd);
-        const buttonDecreaseRow = this.#createDropdownRow('Button -', 'Button', gamepad.buttons, servo.buttonRemove);
-        // Make sure the inputs update the servo.
-        axisSpeedRow.querySelector('input').addEventListener('input', event => {
-            servo.axisSpeed = event.target.value
-        });
-        buttonSpeedRow.querySelector('input').addEventListener('input', event => {
-            servo.buttonSpeed = event.target.value
-        });
-        axisRow.querySelector('select').addEventListener('change', event => {
-            servo.axis.inputIndex = parseInt(event.target.value);
-        });
-        buttonIncreaseRow.querySelector('select').addEventListener('change', event => {
-            servo.buttonAdd.inputIndex = parseInt(event.target.value);
-        });
-        buttonDecreaseRow.querySelector('select').addEventListener('change', event => {
-            servo.buttonRemove.inputIndex = parseInt(event.target.value);
-        });
-        // Assemble the row.
-        settingsFragment.appendChild(axisSpeedRow);
-        settingsFragment.appendChild(axisRow);
-        settingsFragment.appendChild(buttonSpeedRow);
-        settingsFragment.appendChild(buttonIncreaseRow);
-        settingsFragment.appendChild(buttonDecreaseRow);
-        return settingsFragment;
+    updateBindings(servo, gamepad) {
+        this.#updateBinding(servo.axis, 'axis', gamepad.axes);
+        this.#updateBinding(servo.buttonIncrease, 'increase', gamepad.buttons);
+        this.#updateBinding(servo.buttonDecrease, 'decrease', gamepad.buttons);
     }
 
-    #createSliderRow(name, initialValue, typename) {
-        const row = document.createElement('div');
-        row.className = `servo__row row-${typename}`;
-
-        const nameElement = document.createElement('span');
-        nameElement.textContent = name;
-        
-        const value = document.createElement('span');
-        value.textContent = initialValue;
-        value.className = 'slider-value';
-        
-        const slider = document.createElement('input');
-        slider.type = 'range';
-        slider.min = 0;
-        slider.max = 255;
-        slider.step = 1;
-        slider.value = initialValue;
-        slider.className = 'slider-input';
-
-        row.appendChild(nameElement);
-        row.appendChild(value);
-        row.appendChild(slider);
-        return row;
-    }
-
-    #createInputRow(name, initialValue) {
-        const row = document.createElement('div');
-        row.className = 'servo__row';
-
-        const label = document.createElement('label');
-        label.textContent = name;
-
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.min = -5;
-        input.max = 5;
-        input.step = 0.1;
-        input.value = initialValue;
-
-        row.appendChild(label);
-        row.appendChild(input);
-        return row;
+    /**
+     * Updates the slider position and displayed integer representation.
+     * 
+     * @param {string} name - "pwm", "min" or "max"
+     * @param {number} value - number in range 0-255.
+     * 
+     * @returns {HTMLElement} input element of row.
+     */
+    #updateSlider(name, value) {
+        const row = this.#root.querySelector(`.row-${name}`);
+        const valueElement = row.querySelector('.slider-value');
+        const inputElement = row.querySelector('.slider-input');
+        valueElement.textContent = Math.round(value);
+        inputElement.value = value;
+        return inputElement;
     }
 
     /**
      * 
-     * @param {*} name 
-     * @param {*} typename 
-     * @param {*} values 
-     * @param {ServoGamepadBinding} currentBinding 
-     * @returns 
+     * @param {ServoGamepadBinding} binding 
+     * @param {string} bindingName - "axis", "increase" or "decrease".
+     * @param {number[] | GamepadButton[]} gamepadArray - axes or buttons.
      */
-    #createDropdownRow(name, typename, values, currentBinding) {
-        const row = document.createElement('div');
-        row.className = 'servo__row';
+    #updateBinding(binding, bindingName, gamepadArray) {
+        /** @type {HTMLSelectElement} */
+        const selectElement = this.#root.querySelector(
+            `.binding-${bindingName}`
+        );
+        /** @type {HTMLOptionElement} */
 
-        const label = document.createElement('label');
-        label.textContent = name;
+        const defaultOption = selectElement.querySelector('option[value=""]');
+        // Reset the selected option.
+        defaultOption.selected = true;
 
-        const dropdown = document.createElement('select');
-        // Add default option.
-        const defaultOption = document.createElement('option');
-        defaultOption.value = null;
-        defaultOption.text = 'Unbound';
-        if (currentBinding.inputIndex == null) {
-            defaultOption.selected = true;
-        }
-        dropdown.appendChild(defaultOption);
-        // Add all other options.
-        for (const i in values) {
+        // New options that will replace the old ones.
+        let options = [defaultOption];
+        for (const i in gamepadArray) {
             const option = document.createElement('option');
+            const prefix = bindingName == 'axis' ? 'Axis' : 'Button';
             option.value = i;
-            option.text = `${typename}: ${i}`;
-            if (i == currentBinding.inputIndex) {
+            option.text = `${prefix} ${i}`;
+            // Select this option if it matches the servo binding.
+            if (i == binding.inputIndex) {
                 option.selected = true;
             }
-            dropdown.appendChild(option);
+            options.push(option);
         }
 
-        row.appendChild(label);
-        row.appendChild(dropdown);
-        return row;
-    }
-
-    /**
-     * TODO: Add description.
-     * 
-     * @param {HTMLElement} servoElement 
-     */
-    #updateSlider(rowClass, value) {
-        const row = this.#root.querySelector(`.${rowClass}`);
-        const inputElement = row.querySelector('.slider-input');
-        const valueElement = row.querySelector('.slider-value');
-        inputElement.value = value;
-        valueElement.textContent = Math.round(value);
+        // Replace options.
+        selectElement.replaceChildren(...options);
     }
 }
 
@@ -348,7 +291,7 @@ class View {
      */
     addServo(servo, gamepad) {
         const view = new ServoView(servo);
-        view.tryAddGamepadSettings(servo, gamepad);
+        view.updateBindings(servo, gamepad);
         this.#servoViews.push(view);
     }
 
@@ -364,7 +307,7 @@ class View {
         for (const i in servos) {
             const servo = servos[i];
             const servoView = this.#servoViews[i];
-            servoView.tryAddGamepadSettings(servo, gamepad);
+            servoView.updateBindings(servo, gamepad);
         }
         this.#gamepadViews.push(gamepadView);
     }

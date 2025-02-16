@@ -43,9 +43,9 @@ class Servo {
     axis;
     buttonSpeed = 0.1;
     /** @type {ServoGamepadBinding} */
-    buttonAdd;
+    buttonIncrease;
     /** @type {ServoGamepadBinding} */
-    buttonRemove;
+    buttonDecrease;
 
     /**
      * @param {number} index - unique servo index.
@@ -60,8 +60,8 @@ class Servo {
         }
 
         this.axis = new ServoGamepadBinding();
-        this.buttonAdd = new ServoGamepadBinding();
-        this.buttonRemove = new ServoGamepadBinding();
+        this.buttonIncrease = new ServoGamepadBinding();
+        this.buttonDecrease = new ServoGamepadBinding();
     }
 
     static resetIndices() {
@@ -78,8 +78,8 @@ class Servo {
             axisSpeed: this.axisSpeed,
             axis: this.axis.toJSON(),
             buttonSpeed: this.buttonSpeed,
-            buttonAdd: this.buttonAdd.toJSON(),
-            buttonRemove: this.buttonRemove.toJSON()
+            buttonAdd: this.buttonIncrease.toJSON(),
+            buttonRemove: this.buttonDecrease.toJSON()
         };
     }
 
@@ -95,22 +95,13 @@ class Servo {
         servo.axisSpeed = axisSpeed;
         servo.axis = ServoGamepadBinding.fromJSON(axis);
         servo.buttonSpeed = buttonSpeed;
-        servo.buttonAdd = ServoGamepadBinding.fromJSON(buttonAdd);
-        servo.buttonRemove = ServoGamepadBinding.fromJSON(buttonRemove);
+        servo.buttonIncrease = ServoGamepadBinding.fromJSON(buttonAdd);
+        servo.buttonDecrease = ServoGamepadBinding.fromJSON(buttonRemove);
         return servo;
-    }
-
-    move(value) {
-        this.pwm += value;
     }
 
     get index() {
         return this.#index;
-    }
-
-    /** Return the id used for the corresponding HTML element. */
-    get id() {
-        return `servo-${this.#index}`;
     }
 
     /** Decimal pwm value. */

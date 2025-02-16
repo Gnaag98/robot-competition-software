@@ -24,6 +24,58 @@
             <input type="range" name="value", min="-1", max="1", step="0.01", tabindex="-1">
         </div>
     </template>
+    <template id="servo-template">
+        <div class="servo card">
+            <input type="text" maxlength="16" class="card__header input-header">
+            <div class="servo__section">
+                <div class="servo__row row-pwm">
+                    <span>PWM</span>
+                    <span class="slider-value"></span>
+                    <input type="range" min="0" max="255" step="1" class="slider-input">
+                </div>
+                <div class="servo__row row-min">
+                    <span>Min</span>
+                    <span class="slider-value"></span>
+                    <input type="range" min="0" max="255" step="1" class="slider-input">
+                </div>
+                <div class="servo__row row-max">
+                    <span>Max</span>
+                    <span class="slider-value"></span>
+                    <input type="range" min="0" max="255" step="1" class="slider-input">
+                </div>
+            </div>
+            <div class="servo__section">
+                <div class="servo__row">
+                    <span>Axis speed</span>
+                    <input type="number" min="-5" max="5" step="0.1" class="axis-speed">
+                </div>
+                <div class="servo__row">
+                    <span>Button speed</span>
+                    <input type="number" min="0" max="5" step="0.1" class="button-speed">
+                </div>
+            </div>
+            <div class="servo__section">
+                <div class="servo__row">
+                    <span>Axis</span>
+                    <select class="binding-axis">
+                        <option value="">Unbound</option>
+                    </select>
+                </div>
+                <div class="servo__row">
+                    <span>Button +</span>
+                    <select class="binding-increase">
+                        <option value="">Unbound</option>
+                    </select>
+                </div>
+                <div class="servo__row">
+                    <span>Button -</span>
+                    <select class="binding-decrease">
+                        <option value="">Unbound</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </template>
 </head>
 
 <body>

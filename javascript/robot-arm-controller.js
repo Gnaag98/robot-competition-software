@@ -190,19 +190,22 @@ function moveServos(gamepad, deltaTime) {
         return;
     }
     for (const servo of servos) {
-        const axisInput = gamepad.axes[servo.axis];
-        if (axisInput != undefined) {
-            if (Math.abs(axisInput) > gamepadAxisDeadzone) {
-                servo.move(axisInput * servo.axisSpeed * deltaTime);
+        /** @type {number} */
+        const axisValue = gamepad.axes[servo.axis.inputIndex];
+        if (axisValue) {
+            if (Math.abs(axisValue) > gamepadAxisDeadzone) {
+                servo.pwm += axisValue * servo.axisSpeed * deltaTime;
             }
         }
-        const addInput = gamepad.buttons[servo.buttonAdd];
-        if (addInput != undefined) {
-            servo.move(addInput.value * servo.buttonSpeed * deltaTime);
+        /** @type {GamepadButton} */
+        const increaseButton = gamepad.buttons[servo.buttonIncrease.inputIndex];
+        if (increaseButton) {
+            servo.pwm += increaseButton.value * servo.buttonSpeed * deltaTime;
         }
-        const removeInput = gamepad.buttons[servo.buttonRemove];
-        if (removeInput != undefined) {
-            servo.move(-removeInput.value * servo.buttonSpeed * deltaTime);
+        /** @type {GamepadButton} */
+        const decreaseButton = gamepad.buttons[servo.buttonDecrease.inputIndex];
+        if (decreaseButton) {
+            servo.pwm -= decreaseButton.value * servo.buttonSpeed * deltaTime;
         }
     }
 }
