@@ -218,8 +218,12 @@ input[type=range] {
     width: 6ch;
 }
 
-.servo select {
-    width: 12ch;
+.select-gamepad {
+    width: 12.5ch;
+}
+
+.select-input {
+    width: 11ch;
 }
 
 #logger {

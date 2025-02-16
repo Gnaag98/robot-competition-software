@@ -43,9 +43,9 @@ class Servo {
     axis;
     buttonSpeed = 0.1;
     /** @type {ServoGamepadBinding} */
-    buttonIncrease;
+    increaseButton;
     /** @type {ServoGamepadBinding} */
-    buttonDecrease;
+    decreaseButton;
 
     /**
      * @param {number} index - unique servo index.
@@ -60,8 +60,8 @@ class Servo {
         }
 
         this.axis = new ServoGamepadBinding();
-        this.buttonIncrease = new ServoGamepadBinding();
-        this.buttonDecrease = new ServoGamepadBinding();
+        this.increaseButton = new ServoGamepadBinding();
+        this.decreaseButton = new ServoGamepadBinding();
     }
 
     static resetIndices() {
@@ -78,8 +78,8 @@ class Servo {
             axisSpeed: this.axisSpeed,
             axis: this.axis.toJSON(),
             buttonSpeed: this.buttonSpeed,
-            buttonAdd: this.buttonIncrease.toJSON(),
-            buttonRemove: this.buttonDecrease.toJSON()
+            buttonAdd: this.increaseButton.toJSON(),
+            buttonRemove: this.decreaseButton.toJSON()
         };
     }
 
@@ -95,8 +95,8 @@ class Servo {
         servo.axisSpeed = axisSpeed;
         servo.axis = ServoGamepadBinding.fromJSON(axis);
         servo.buttonSpeed = buttonSpeed;
-        servo.buttonIncrease = ServoGamepadBinding.fromJSON(buttonAdd);
-        servo.buttonDecrease = ServoGamepadBinding.fromJSON(buttonRemove);
+        servo.increaseButton = ServoGamepadBinding.fromJSON(buttonAdd);
+        servo.decreaseButton = ServoGamepadBinding.fromJSON(buttonRemove);
         return servo;
     }
 

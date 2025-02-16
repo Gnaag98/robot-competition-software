@@ -10,7 +10,6 @@ let gamepadSettings = [];
 // The Gamepad object represents the state of the gamepad at a specific point in
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
-let gamepadIndex;
 /** @type {ServerConnection} */
 let connection;
 
@@ -41,11 +40,13 @@ function loop() {
     // Time since the last frame.
     const deltaTime = timeNow - lastFrameTime;
     // Get a snapshot of the gamepad.
-    const gamepad = navigator.getGamepads()[gamepadIndex];
+    const gamepads = navigator.getGamepads();
     // Respond to gamepad input.
-    moveServos(gamepad, deltaTime);
+    for (const gamepad of gamepads) {
+        updateServos(gamepad, deltaTime);
+    }
     // Update all views.
-    view.update(servos, gamepad);
+    view.update(servos, gamepads);
     // Send data to the server.
     send();
     // Continue the loop on the next frame.
@@ -160,7 +161,7 @@ function save() {
 function addServo(servoJson = null) {
     const servo = servoJson ? Servo.fromJSON(servoJson) : new Servo();
     servos.push(servo);
-    view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
+    view.addServo(servo);
 }
 
 /**
@@ -169,43 +170,54 @@ function addServo(servoJson = null) {
  * @param {Gamepad} gamepad 
  */
 function addGamepad(gamepad) {
-    gamepadIndex = gamepad.index;
-    if (!gamepadSettings[gamepad.index]) {
-        // Create default data if none was loaded.
-        gamepadSettings[gamepad.index] = new GamepadViewData(gamepad);
+    const gamepadIndex = gamepad.index;
+    // Create default data if none already exists.
+    if (!gamepadSettings[gamepadIndex]) {
+        gamepadSettings[gamepadIndex] = new GamepadViewData(gamepad);
     }
-    const gamepadViewData = gamepadSettings[gamepad.index];
+    const gamepadViewData = gamepadSettings[gamepadIndex];
     view.addGamepad(servos, gamepad, gamepadViewData);
 }
 
 /**
- * Use gamepad input to update servos.
+ * Update servos based on the inputs from a gamepad.
  * 
  * @param {Gamepad} gamepad Readonly representation of the gamepad as it was
- * when it was last fetched using its ID.
+ * when it was last fetched.
  * @param {number} deltaTime Time in milliseconds since last update.
  */
-function moveServos(gamepad, deltaTime) {
+function updateServos(gamepad, deltaTime) {
     if (!gamepad) {
         return;
     }
     for (const servo of servos) {
-        /** @type {number} */
-        const axisValue = gamepad.axes[servo.axis.inputIndex];
-        if (axisValue) {
-            if (Math.abs(axisValue) > gamepadAxisDeadzone) {
-                servo.pwm += axisValue * servo.axisSpeed * deltaTime;
+        // Check axis binding.
+        if (gamepad.index == servo.axis.gamepadIndex) {
+            /** @type {number | undefined} */
+            const axisValue = gamepad.axes[servo.axis.inputIndex];
+            if (axisValue) {
+                if (Math.abs(axisValue) > gamepadAxisDeadzone) {
+                    servo.pwm += axisValue * servo.axisSpeed * deltaTime;
+                }
             }
         }
-        /** @type {GamepadButton} */
-        const increaseButton = gamepad.buttons[servo.buttonIncrease.inputIndex];
-        if (increaseButton) {
-            servo.pwm += increaseButton.value * servo.buttonSpeed * deltaTime;
+
+        // Check increase-button binding.
+        if (gamepad.index == servo.increaseButton.gamepadIndex) {
+            /** @type {GamepadButton | undefined} */
+            const button = gamepad.buttons[servo.increaseButton.inputIndex];
+            if (button) {
+                servo.pwm += button.value * servo.buttonSpeed * deltaTime;
+            }
         }
-        /** @type {GamepadButton} */
-        const decreaseButton = gamepad.buttons[servo.buttonDecrease.inputIndex];
-        if (decreaseButton) {
-            servo.pwm -= decreaseButton.value * servo.buttonSpeed * deltaTime;
+
+        // Check decrease-button binding.
+        if (gamepad.index == servo.decreaseButton.gamepadIndex) {
+            /** @type {GamepadButton | undefined} */
+            const button = gamepad.buttons[servo.decreaseButton.inputIndex];
+            if (button) {
+                servo.pwm -= button.value * servo.buttonSpeed * deltaTime;
+            }
         }
     }
 }

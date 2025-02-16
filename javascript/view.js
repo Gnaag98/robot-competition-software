@@ -62,16 +62,9 @@ class ServoView {
         const bindingAxis = card.querySelector('.binding-axis');
         const bindingincrease = card.querySelector('.binding-increase');
         const bindingdecrease = card.querySelector('.binding-decrease');
-        const toIntOrNull = string => string ? parseInt(string) : null;
-        bindingAxis.addEventListener('change', event => {
-            servo.axis.inputIndex = toIntOrNull(event.target.value);
-        });
-        bindingincrease.addEventListener('change', event => {
-            servo.buttonIncrease.inputIndex = toIntOrNull(event.target.value);
-        });
-        bindingdecrease.addEventListener('change', event => {
-            servo.buttonDecrease.inputIndex = toIntOrNull(event.target.value);
-        });
+        this.#addBindingListeners(servo, servo.axis, bindingAxis);
+        this.#addBindingListeners(servo, servo.increaseButton, bindingincrease);
+        this.#addBindingListeners(servo, servo.decreaseButton, bindingdecrease);
 
         // Add card to DOM.
         document.getElementById('servos').appendChild(card);
@@ -97,12 +90,12 @@ class ServoView {
      * Update the bindings between gamepads and the servo.
      * 
      * @param {Servo} servo
-     * @param {Gamepad} gamepad 
      */
-    updateBindings(servo, gamepad) {
-        this.#updateBinding(servo.axis, 'axis', gamepad.axes);
-        this.#updateBinding(servo.buttonIncrease, 'increase', gamepad.buttons);
-        this.#updateBinding(servo.buttonDecrease, 'decrease', gamepad.buttons);
+    updateBindings(servo) {
+        const gamepads = navigator.getGamepads();
+        this.#updateBinding(servo.axis, 'axis', gamepads);
+        this.#updateBinding(servo.increaseButton, 'increase', gamepads);
+        this.#updateBinding(servo.decreaseButton, 'decrease', gamepads);
     }
 
     /**
@@ -123,38 +116,120 @@ class ServoView {
     }
 
     /**
+     * Add event listeners to the select elements for a specified binding.
      * 
+     * @param {Servo} servo
+     * @param {ServoGamepadBinding} binding 
+     * @param {HTMLElement} bindingElement - container for the select elements.
+     */
+    #addBindingListeners(servo, binding, bindingElement) {
+        const gamepadSelect = bindingElement.querySelector('.select-gamepad');
+        const inputSelect = bindingElement.querySelector('.select-input');
+        const toIntOrNull = string => string ? parseInt(string) : null;
+        gamepadSelect.addEventListener('change', event => {
+            const previousIndex = binding.gamepadIndex;
+            binding.gamepadIndex = toIntOrNull(event.target.value);
+            // Reset the axis/button binding when switching gamepad.
+            if (binding.gamepadIndex != previousIndex) {
+                binding.inputIndex = null;
+            }
+            // Refresh the options.
+            this.updateBindings(servo);
+        });
+        inputSelect.addEventListener('change', event => {
+            binding.inputIndex = toIntOrNull(event.target.value);
+            // Refresh the options.
+            this.updateBindings(servo);
+        });
+    }
+
+    /**
      * @param {ServoGamepadBinding} binding 
      * @param {string} bindingName - "axis", "increase" or "decrease".
-     * @param {number[] | GamepadButton[]} gamepadArray - axes or buttons.
+     * @param {Gamepad[]} gamepads 
      */
-    #updateBinding(binding, bindingName, gamepadArray) {
-        /** @type {HTMLSelectElement} */
-        const selectElement = this.#root.querySelector(
+    #updateBinding(binding, bindingName, gamepads) {
+        const bindingElement = this.#root.querySelector(
             `.binding-${bindingName}`
         );
-        /** @type {HTMLOptionElement} */
+        
+        this.#updateGamepadSelect(binding, bindingElement, gamepads);
+        /** @type {Gamepad | undefined} */
+        const gamepad = gamepads[binding.gamepadIndex];
+        // There are no inputs for a disconnected gamepad. This is okay.
+        const inputs = bindingName == 'axis' ? gamepad?.axes : gamepad?.buttons;
+        this.#updateInputSelect(binding, bindingElement, inputs);
+    }
 
-        const defaultOption = selectElement.querySelector('option[value=""]');
+    /**
+     * Update the dropdown list of gamepads.
+     * 
+     * @param {ServoGamepadBinding} binding 
+     * @param {HTMLElement} bindingElement - container for the select elements.
+     * @param {Gamepad[]} gamepads 
+     */
+    #updateGamepadSelect(binding, bindingElement, gamepads) {
+        const select = bindingElement.querySelector('.select-gamepad');
+        /** @type {HTMLOptionElement} */
+        const defaultOption = select.querySelector('option[value=""]');
         // Reset the selected option.
         defaultOption.selected = true;
 
         // New options that will replace the old ones.
         let options = [defaultOption];
-        for (const i in gamepadArray) {
+        for (const gamepad of gamepads) {
+            if (!gamepad) {
+                continue;
+            }
+            const i = gamepad.index;
             const option = document.createElement('option');
-            const prefix = bindingName == 'axis' ? 'Axis' : 'Button';
             option.value = i;
-            option.text = `${prefix} ${i}`;
-            // Select this option if it matches the servo binding.
-            if (i == binding.inputIndex) {
+            option.text = `Gamepad ${i}`;
+            if (i == binding.gamepadIndex) {
                 option.selected = true;
             }
             options.push(option);
         }
 
         // Replace options.
-        selectElement.replaceChildren(...options);
+        select.replaceChildren(...options);
+    }
+
+    /**
+     * Update the dropdown list of axes or buttons.
+     * 
+     * @param {ServoGamepadBinding} binding 
+     * @param {HTMLElement} bindingElement
+     * @param {number[] | GamepadButton[]} inputs - axes or buttons.
+
+     */
+    #updateInputSelect(binding, bindingElement, inputs) {
+        const select = bindingElement.querySelector('.select-input');
+        /** @type {HTMLOptionElement} */
+        const defaultOption = select.querySelector('option[value=""]');
+        // Reset the selected option.
+        defaultOption.selected = true;
+
+        // New options that will replace the old ones.
+        let options = [defaultOption];
+        // If no inputs were supplied, just replace with the default option.
+        if (inputs) {
+            const input = inputs[0];
+            const prefix = input instanceof GamepadButton ? 'Button' : 'Axis';
+            for (const i in inputs) {
+                const option = document.createElement('option');
+                // Select the first available gamepad by default.
+                option.value = i;
+                option.text = `${prefix} ${i}`;
+                if (i == binding.inputIndex) {
+                    option.selected = true;
+                }
+                options.push(option);
+            }
+        }
+
+        // Replace options.
+        select.replaceChildren(...options);
     }
 }
 
@@ -187,9 +262,10 @@ class GamepadView {
 
     /**
      * 
-     * @param {Gamepad} gamepad 
+     * @param {Gamepad[]} gamepads
      */
-    update(gamepad) {
+    update(gamepads) {
+        const gamepad = gamepads[this.#gamepadViewData.index];
         // Update buttons.
         const buttonElements = this.#root.querySelectorAll('.gamepad__button');
         for (const buttonIndex in gamepad.buttons) {
@@ -287,11 +363,10 @@ class View {
      * TODO: Add description.
      * 
      * @param {Servo} servo 
-     * @param {Gamepad} gamepad 
      */
-    addServo(servo, gamepad) {
+    addServo(servo) {
         const view = new ServoView(servo);
-        view.updateBindings(servo, gamepad);
+        view.updateBindings(servo);
         this.#servoViews.push(view);
     }
 
@@ -307,18 +382,18 @@ class View {
         for (const i in servos) {
             const servo = servos[i];
             const servoView = this.#servoViews[i];
-            servoView.updateBindings(servo, gamepad);
+            servoView.updateBindings(servo);
         }
         this.#gamepadViews.push(gamepadView);
     }
 
     /**
-     * TODO: Add description.
+     * Update all views.
      * 
      * @param {Servo[]} servos 
-     * @param {Gamepad} gamepad 
+     * @param {Gamepad[]} gamepads
      */
-    update(servos, gamepad) {
+    update(servos, gamepads) {
         // Update servo views.
         for (const i in servos) {
             const servo = servos[i];
@@ -327,7 +402,7 @@ class View {
         }
         // Update gamepad views.
         for (const view of this.#gamepadViews) {
-            view.update(gamepad);
+            view.update(gamepads);
         }
     }
 
