@@ -4,7 +4,9 @@ const gamepadAxisDeadzone = 0.2;
 const view = new View();
 
 /** @type {Servo[]} */
-const servos = [];
+let servos = [];
+/** @type {GamepadViewData[]} */
+let gamepadSettings = [];
 // The Gamepad object represents the state of the gamepad at a specific point in
 // time. Using the index we can request the latest state when needed.
 // TODO: Replace the singular index to allow for multiple controllers.
@@ -108,6 +110,7 @@ function send() {
 /** @param {Event} event */
 function load(event) {
     clearServos();
+    clearGamepads();
     /** @type {File} */
     const file = event.target.files[0];
     if (file.type !== 'application/json') {
@@ -118,6 +121,16 @@ function load(event) {
     // When the file is loaded, parse the content.
     reader.addEventListener('loadend', () => {
         const json = JSON.parse(reader.result);
+        for (const gamepadViewDataJson of json['gamepads']) {
+            const data = GamepadViewData.fromJSON(gamepadViewDataJson);
+            gamepadSettings.push(data);
+        }
+        // Re-add all connected gamepads.
+        for (const gamepad of navigator.getGamepads()) {
+            if (gamepad) {
+                addGamepad(gamepad);
+            }
+        }
         for (const servo of json['servos']) {
             addServo(servo);
         }
@@ -128,6 +141,7 @@ function load(event) {
 
 function save() {
     const json = {
+        'gamepads': gamepadSettings,
         'servos': servos
     };
     const jsonString = JSON.stringify(json, null, 4);
@@ -149,9 +163,19 @@ function addServo(servoJson = null) {
     view.addServo(servo, navigator.getGamepads()[gamepadIndex]);
 }
 
+/**
+ * Add the gamepad and render a view for it.
+ * 
+ * @param {Gamepad} gamepad 
+ */
 function addGamepad(gamepad) {
     gamepadIndex = gamepad.index;
-    view.addGamepad(servos, gamepad);
+    if (!gamepadSettings[gamepad.index]) {
+        // Create default data if none was loaded.
+        gamepadSettings[gamepad.index] = new GamepadViewData(gamepad);
+    }
+    const gamepadViewData = gamepadSettings[gamepad.index];
+    view.addGamepad(servos, gamepad, gamepadViewData);
 }
 
 /**
@@ -187,4 +211,9 @@ function clearServos() {
     servos = [];
     Servo.resetIndices();
     view.clearServos();
+}
+
+function clearGamepads() {
+    gamepadSettings = [];
+    view.clearGamepads();
 }

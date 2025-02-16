@@ -43,11 +43,11 @@ class ServoView {
         servoElement.className = 'servo card';
         // Create editable header.
         const header = document.createElement('input');
-        header.placeholder = servo.name;
+        header.placeholder = `Servo ${servo.index}`;
+        header.value = servo.name;
         header.maxLength = 16;
         header.addEventListener('input', () => {
-            // Update the servo name and use the placeholder as a fallback.
-            servo.name = header.value ? header.value : header.placeholder;
+            servo.name = header.value;
         });
         header.className = 'card__header input-header';
         // Create sliders.
@@ -205,6 +205,12 @@ class ServoView {
 /** Visual representation of a gamepad. */
 class GamepadView {
     /**
+     * User specified settings.
+     * 
+     * @type {GamepadViewData}
+     */
+    #gamepadViewData;
+    /**
      * Root container for a servo.
      *  
      * @type {HTMLElement}
@@ -215,12 +221,18 @@ class GamepadView {
      * Create a visual representation of the servo and attach it to the DOM.
      * 
      * @param {Gamepad} gamepad 
+     * @param {GamepadViewData} gamepadViewData 
      */
-    constructor(gamepad) {
+    constructor(gamepad, gamepadViewData) {
+        this.#gamepadViewData = gamepadViewData;
         this.#root = this.#createCard(gamepad);
         document.getElementById('gamepads').appendChild(this.#root);
     }
 
+    /**
+     * 
+     * @param {Gamepad} gamepad 
+     */
     update(gamepad) {
         // Update buttons.
         const buttonElements = this.#root.querySelectorAll('.gamepad__button');
@@ -258,14 +270,24 @@ class GamepadView {
         const gamepadTemplate = document.getElementById('gamepad-template');
         /** @type {DocumentFragment} */
         const gamepadFragment = gamepadTemplate.content.cloneNode(true);
-        gamepadFragment.querySelector('.card__header').placeholder = `Gamepad ${gamepad.index}`;
+        /** @type {HTMLInputElement} */
+        const header = gamepadFragment.querySelector('.gamepad__name');
+        header.placeholder = `Gamepad ${gamepad.index}`;
+        header.value = this.#gamepadViewData.name;
+        header.addEventListener('input', () => {
+            this.#gamepadViewData.name = header.value;
+        });
 
         // Add button indicators.
         for (const i in gamepad.buttons) {
             const buttonElement = document.createElement('input');
             buttonElement.placeholder = i;
+            buttonElement.value = this.#gamepadViewData.buttons[i];
             buttonElement.maxLength = 2;
             buttonElement.className = 'gamepad__button';
+            buttonElement.addEventListener('input', () => {
+                this.#gamepadViewData.buttons[i] = buttonElement.value;
+            });
             gamepadFragment.querySelector('.gamepad__buttons').appendChild(buttonElement);
         }
         // Add axis indicators.
@@ -277,6 +299,10 @@ class GamepadView {
             const name = axisFragment.querySelector('input[type=text]');
             const slider = axisFragment.querySelector('input[type=range]');
             name.placeholder = i;
+            name.value = this.#gamepadViewData.axes[i];
+            name.addEventListener('input', () => {
+                this.#gamepadViewData.axes[i] = name.value;
+            });
             slider.value = '0';
             gamepadFragment.querySelector('.gamepad__axes').appendChild(axisFragment);
         }
@@ -318,9 +344,10 @@ class View {
      * 
      * @param {Servo[]} servos 
      * @param {Gamepad} gamepad 
+     * @param {GamepadViewData} gamepadViewData 
      */
-    addGamepad(servos, gamepad) {
-        const gamepadView = new GamepadView(gamepad);
+    addGamepad(servos, gamepad, gamepadViewData) {
+        const gamepadView = new GamepadView(gamepad, gamepadViewData);
         for (const i in servos) {
             const servo = servos[i];
             const servoView = this.#servoViews[i];

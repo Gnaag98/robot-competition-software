@@ -3,12 +3,11 @@ function clamp(val, min, max) {
 }
 
 class Servo {
-    static #nextServoIndex = 0;
+    static #nextIndex = 0;
     
     /** @type {number} */
     #index;
-    /** @type {string} */
-    #name;
+    name = '';
     /** 
      * Make sure to not store the pwm as an integer as this would prevent fine
      * changes by a gamepad. */
@@ -26,31 +25,24 @@ class Servo {
 
     /**
      * @param {number} index - unique servo index.
-     * @param {string} name - default/user defined servo name.
      */
-    constructor(index, name) {
-        if (index === undefined) {
-            this.#index = Servo.#nextServoIndex++;
-        } else {
+    constructor(index) {
+        if (index !== undefined) {
             this.#index = index;
             // Make sure the next index is unique.
-            Servo.#nextServoIndex = Math.max(Servo.#nextServoIndex, index + 1);
-        }
-
-        if (name === undefined) {
-            this.#name = `Servo ${this.#index}`;
+            Servo.#nextIndex = Math.max(Servo.#nextIndex, index + 1);
         } else {
-            this.#name = name;
+            this.#index = Servo.#nextIndex++;
         }
     }
 
     static resetIndices() {
-        Servo.#nextServoIndex = 0;
+        Servo.#nextIndex = 0;
     }
 
     toJSON() {
         return {
-            index: this.index,
+            index: this.#index,
             name: this.name,
             pwm: Math.round(this.pwm),
             min: this.min,
@@ -60,11 +52,15 @@ class Servo {
             buttonSpeed: this.buttonSpeed,
             buttonAdd: this.buttonAdd,
             buttonRemove: this.buttonRemove
-        }
+        };
     }
 
-    static fromJSON({index, name, pwm, min, max, axisSpeed, axis, buttonSpeed, buttonAdd, buttonRemove}) {
-        let servo = new Servo(index, name);
+    static fromJSON({
+            index, name, pwm, min, max, axisSpeed, axis, buttonSpeed, buttonAdd,
+            buttonRemove
+        }) {
+        let servo = new Servo(index);
+        servo.name = name;
         servo.pwm = pwm;
         servo.min = min;
         servo.max = max;
@@ -86,19 +82,7 @@ class Servo {
 
     /** Return the id used for the corresponding HTML element. */
     get id() {
-        return `servo-${this.index}`;
-    }
-
-    get name() {
-        return this.#name;
-    }
-
-    set name(newName) {
-        if (newName.length == 0){
-            this.#name = `Servo ${this.#index}`;
-        } else {
-            this.#name = newName;
-        }
+        return `servo-${this.#index}`;
     }
 
     /** Decimal pwm value. */
