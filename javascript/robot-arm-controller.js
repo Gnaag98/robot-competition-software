@@ -22,14 +22,21 @@ setup();
 function setup() {
     connection = new ServerConnection(onConnected, onDisconnected, View.log);
     // Make the visible menu buttons interactive.
-    document.getElementById('connect').addEventListener('click', connectOnClick);
+    document.getElementById('connect').addEventListener(
+        'click', connectOnClick
+    );
     document.getElementById('load').addEventListener('change', load);
     document.getElementById('save').addEventListener('click', save);
     document.getElementById('add-servo').addEventListener('click', () => {
         addServo();
     });
     // Start listening for gamepads connecting.
-    window.addEventListener('gamepadconnected', event => addGamepad(event.gamepad));
+    window.addEventListener(
+        'gamepadconnected', event => addGamepad(event.gamepad)
+    );
+    window.addEventListener('gamepaddisconnected', event => {
+        view.removeGamepad(servos, event.gamepad);
+    });
     // Start the main loop that should run on each frame.
     window.requestAnimationFrame(loop);
 }

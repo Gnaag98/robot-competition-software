@@ -292,6 +292,21 @@ class GamepadView {
     }
 
     /**
+     * Remove from the DOM only if the index matches.
+     * 
+     * @param {number} index 
+     * @returns true if the DOM element was removed.
+     */
+    removeIfMatching(index) {
+        if (index == this.#gamepadViewData.index) {
+            this.remove();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * TODO: Add description.
      * 
      * @param {Gamepad} gamepad 
@@ -412,6 +427,34 @@ class View {
             view.remove();
         }
         this.#servoViews = [];
+    }
+
+    /**
+     * Remove the view corresponding to the specified gamepad.
+     * 
+     * @param {Servo[]} servos 
+     * @param {Gamepad} gamepad 
+     */
+    removeGamepad(servos, gamepad) {
+        // Index of the view to remove.
+        let index = -1;
+        for (const i in this.#gamepadViews) {
+            const view = this.#gamepadViews[i];
+            if (view.removeIfMatching(gamepad.index)) {
+                index = i;
+                break;
+            }
+        }
+        // Remove the view.
+        if (index >= 0) {
+            this.#gamepadViews.splice(index, 1);
+        }
+        // Update the servo bindings to reflect the missing gamepad.
+        for (const i in servos) {
+            const servo = servos[i];
+            const servoView = this.#servoViews[i];
+            servoView.updateBindings(servo);
+        }
     }
 
     /** Remove the visual representation of all gamepads from the DOM. */
