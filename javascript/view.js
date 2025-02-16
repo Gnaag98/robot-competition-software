@@ -74,8 +74,13 @@ class ServoView {
         return servoElement;
     }
 
-    // TODO: Refactor this function. The settings should all be there at
-    // creation, and when a gamepad is connected then the options are populated.
+    /**
+     * TODO: Refactor this function. The settings should all be there at
+     * creation, and when a gamepad is connected then the options are populated.
+     * 
+     * @param {Servo} servo
+     * @param {Gamepad} gamepad 
+     */
     #createGamepadSettings(servo, gamepad) {
         // Create a parent fragment instead of a div so that the rows end up as
         // siblings to the other rows.
@@ -95,13 +100,13 @@ class ServoView {
             servo.buttonSpeed = event.target.value
         });
         axisRow.querySelector('select').addEventListener('change', event => {
-            servo.axis = parseInt(event.target.value);
+            servo.axis.inputIndex = parseInt(event.target.value);
         });
         buttonIncreaseRow.querySelector('select').addEventListener('change', event => {
-            servo.buttonAdd = parseInt(event.target.value);
+            servo.buttonAdd.inputIndex = parseInt(event.target.value);
         });
         buttonDecreaseRow.querySelector('select').addEventListener('change', event => {
-            servo.buttonRemove = parseInt(event.target.value);
+            servo.buttonRemove.inputIndex = parseInt(event.target.value);
         });
         // Assemble the row.
         settingsFragment.appendChild(axisSpeedRow);
@@ -156,7 +161,15 @@ class ServoView {
         return row;
     }
 
-    #createDropdownRow(name, typename, values, initialValue) {
+    /**
+     * 
+     * @param {*} name 
+     * @param {*} typename 
+     * @param {*} values 
+     * @param {ServoGamepadBinding} currentBinding 
+     * @returns 
+     */
+    #createDropdownRow(name, typename, values, currentBinding) {
         const row = document.createElement('div');
         row.className = 'servo__row';
 
@@ -168,7 +181,7 @@ class ServoView {
         const defaultOption = document.createElement('option');
         defaultOption.value = null;
         defaultOption.text = 'Unbound';
-        if (initialValue == null) {
+        if (currentBinding.inputIndex == null) {
             defaultOption.selected = true;
         }
         dropdown.appendChild(defaultOption);
@@ -177,7 +190,7 @@ class ServoView {
             const option = document.createElement('option');
             option.value = i;
             option.text = `${typename}: ${i}`;
-            if (initialValue == i) {
+            if (i == currentBinding.inputIndex) {
                 option.selected = true;
             }
             dropdown.appendChild(option);

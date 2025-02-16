@@ -2,6 +2,30 @@ function clamp(val, min, max) {
     return Math.min(Math.max(val, min), max);
 }
 
+class ServoGamepadBinding {
+    /**
+     * @param {number} gamepadIndex 
+     * @param {number} inputIndex Index of either a button or an axis.
+     */
+    constructor(gamepadIndex, inputIndex) {
+        /** @type {number | null} */
+        this.gamepadIndex = gamepadIndex ?? null;
+        /** @type {number | null} */
+        this.inputIndex = inputIndex ?? null;
+    }
+
+    toJSON() {
+        return {
+            gamepadIndex: this.gamepadIndex,
+            inputIndex: this.inputIndex
+        }
+    }
+
+    static fromJSON({gamepadIndex, inputIndex}) {
+        return new ServoGamepadBinding(gamepadIndex, inputIndex);
+    }
+}
+
 class Servo {
     static #nextIndex = 0;
     
@@ -15,13 +39,13 @@ class Servo {
     #pwmMin = 0;
     #pwmMax = 255;
     axisSpeed = 0.1;
-    /** @type {number | null} */
-    axis = null;
+    /** @type {ServoGamepadBinding} */
+    axis;
     buttonSpeed = 0.1;
-    /** @type {number | null} */
-    buttonAdd = null;
-    /** @type {number | null} */
-    buttonRemove = null;
+    /** @type {ServoGamepadBinding} */
+    buttonAdd;
+    /** @type {ServoGamepadBinding} */
+    buttonRemove;
 
     /**
      * @param {number} index - unique servo index.
@@ -34,6 +58,10 @@ class Servo {
         } else {
             this.#index = Servo.#nextIndex++;
         }
+
+        this.axis = new ServoGamepadBinding();
+        this.buttonAdd = new ServoGamepadBinding();
+        this.buttonRemove = new ServoGamepadBinding();
     }
 
     static resetIndices() {
@@ -48,10 +76,10 @@ class Servo {
             min: this.min,
             max: this.max,
             axisSpeed: this.axisSpeed,
-            axis: this.axis,
+            axis: this.axis.toJSON(),
             buttonSpeed: this.buttonSpeed,
-            buttonAdd: this.buttonAdd,
-            buttonRemove: this.buttonRemove
+            buttonAdd: this.buttonAdd.toJSON(),
+            buttonRemove: this.buttonRemove.toJSON()
         };
     }
 
@@ -65,10 +93,10 @@ class Servo {
         servo.min = min;
         servo.max = max;
         servo.axisSpeed = axisSpeed;
-        servo.axis = axis;
+        servo.axis = ServoGamepadBinding.fromJSON(axis);
         servo.buttonSpeed = buttonSpeed;
-        servo.buttonAdd = buttonAdd;
-        servo.buttonRemove = buttonRemove;
+        servo.buttonAdd = ServoGamepadBinding.fromJSON(buttonAdd);
+        servo.buttonRemove = ServoGamepadBinding.fromJSON(buttonRemove);
         return servo;
     }
 
