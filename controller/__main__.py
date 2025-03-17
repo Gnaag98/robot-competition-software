@@ -31,7 +31,7 @@ def serial_send_bytes(serial: Serial, data: bytearray | list):
 	# Message body.
 	message[2: -1] = data
 	# Message footer.
-	message[-1] = sum(data) % 256	# Checksum of body
+	message[-1] = sum(data) % 256 # Checksum of body
 	serial.write(message)
 
 
