@@ -102,18 +102,26 @@ serial output.
 Uploading to an ESP32 microcontroller using the Arduino IDE requires some extra
 steps. We need the ESP32 board manager from Espressif because the board manager
 for the Arduino Nano ESP32 from Arduino does not include the necessary ESP-NOW
-serial library.
+serial library. But we need both to get the necessary drivers, at least for
+Windows.
+
+**NOTE:** Major issues on Linux, at least Linux Mint. If you are experiencing
+problems like serial only working directly after uploading but not after
+unplugging and plugging back in the USB, contact the Robot Group and we will
+help find an alternative solution on the controller side.
 
 1. Add the ESP32 board manager
     1. Navigate to **File->Preferences**.
 	2. Next to *Additional boards manager URLs:* paste in the following URL: 
 	*https://espressif.github.io/arduino-esp32/package_esp32_index.json* and
 	click **OK**.
-	3. Navigate to **Tools->Board:->Boards Manager...**.
-	4. Search for *esp32* and install the library *esp32* by *Espressif
-	Systems*. **NOTE:** At the time of writing (2025-03-19) you might need to
-	install the older version 3.1.1. Just make sure to not update the boards
-	when prompted each time you open the Arduino IDE.
+	3. Navigate to **Tools->Board:->Boards Manager...** and search for *esp32*.
+	4. First install the board manager from *Arduino*. This is needed on Windows
+	to get the neded drivers.
+	5. Then install the board manager *esp32* by *Espressif
+	Systems*. **NOTE:** At the time of writing (2025-03-19) you need to install
+	the older version 3.1.1. Just make sure to not update the boards when
+	prompted each time you open the Arduino IDE.
 2. Select the *Arduino Nano ESP32* board
     1. Navigate to the annoyingly long drop down at **Tools->Boards:->esp32**.
 	2. Scroll forever almost down to the bottom by hovering the mouse over the
@@ -124,8 +132,8 @@ serial library.
 **Tools->Reload Board Data** and wait a few seconds.
 4. upload and pray
 
-If praying didn't work you probably got a lovely error message including these
-two red message:
+If praying didn't work you might have gotten the lovely error message including
+these two red lines:
 
 > `dfu-util: No DFU capable USB device available`
 
@@ -147,4 +155,19 @@ few seconds.
 
 If you are having persistent issues with receiving serial output from the
 Arduino Nano ESP32, take a break, touch some grass and ask the Robot Group for
-help.
+help. 
+
+### Get MAC-address
+To get the MAC-addresses of the ESP32 microcontrollers, upload the `mac_address`
+sketches and note down the six pairs of hexadecimal numbers from the serial
+output. Make sure to have the correct baud rate specified in the setup()
+function.
+
+### Pair ESP devices
+To use the ESP32 microcontrollers as a serial forwarder, upload the
+`esp_now_serial` sketch. In the sketch, modify the `peer_mac_address` variable
+before uploading. Do this for each ESP you upload to.
+
+To test if the pairing worked, connect both ESPs to your computer and open a
+serial monitor for each device. Try writing in the serial monitor and see if it
+appears on the other device.
