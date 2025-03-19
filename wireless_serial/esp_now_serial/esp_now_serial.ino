@@ -120,10 +120,10 @@ void setup() {
 
 void loop() {
   // Forward serial data from device to peer wirelessly.
-  while (Serial.available() && wireless.availableForWrite()) {
-    if (wireless.write(Serial.read()) <= 0) {
+  while (wired.available() && wireless.availableForWrite()) {
+    if (wireless.write(wired.read()) <= 0) {
       // You can uncomment this diagnostics section when debugging.
-      /*Serial.println("Failed to send data");
+      /*wired.println("Failed to send data");
       break;*/
     }
     last_serial_read_time = millis();
@@ -131,7 +131,7 @@ void loop() {
 
   // Forward wireless data from peer to device over serial.
   while (wireless.available()) {
-    Serial.write(wireless.read());
+    wired.write(wireless.read());
     last_wireless_read_time = millis();
   }
 
