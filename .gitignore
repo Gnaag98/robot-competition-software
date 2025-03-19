@@ -9,3 +9,6 @@ venv/
 
 # VS Code
 .vscode/
+
+# If using this directory as the Arduino sketchbook location
+libraries/

@@ -19,9 +19,11 @@ websocket_port = 8765
 messages_per_second = 50
 
 
-def serial_send_bytes(serial: Serial, data: bytearray | list):
+def serial_send_bytes(serial: Serial, start_flag: int, data: bytearray | list):
 	"""Send a list of bytes, or ints in the inclusive range 0-255, over serial."""
-	start_flag = 0x02
+	if start_flag < 0 or start_flag > 255:
+		print(f'Start flag ({start_flag}) is not in the range 0-255.')
+		return
 
 	# Make space for message header, body and footer.
 	message = bytearray(2 + len(data) + 1)
@@ -61,6 +63,9 @@ async def pass_serial_to_socket(serial: Serial, websocket):
 async def event_loop(serial: Serial, websocket):
 	"""Main event loop. Will only advance to the next iteration when the next WebSocket message arives."""
 	print('Connected to web interface')
+	servo_start_flag = 0x02
+	motor_start_flag = 0x04
+
 	last_message_time = time()
 	async for websocket_message in websocket:
 		now = time()
@@ -70,12 +75,12 @@ async def event_loop(serial: Serial, websocket):
 		message_delay = 1 / messages_per_second
 		if now - last_message_time > message_delay:
 			message_json = json.loads(websocket_message)
-			# Get a list of pwm values, one for each servo.
-			pwm_list = message_json['servos'].values()
-			# Stop parsing the message if the pwm values are missing.
-			if len(pwm_list) < 1:
-				continue
-			serial_send_bytes(serial, pwm_list)
+
+			# Send servos message.
+			servos_pwm = message_json['servos'].values()
+			if len(servos_pwm) > 0:
+				serial_send_bytes(serial, servo_start_flag, servos_pwm)
+
 			last_message_time = now
 
 
