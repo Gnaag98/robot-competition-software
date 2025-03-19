@@ -108,7 +108,7 @@ Windows.
 **NOTE:** Major issues on Linux, at least Linux Mint. If you are experiencing
 problems like serial only working directly after uploading but not after
 unplugging and plugging back in the USB, contact the Robot Group and we will
-help find an alternative solution on the controller side.
+help you with an alternative ESP solution on the PC side.
 
 1. Add the ESP32 board manager
     1. Navigate to **File->Preferences**.
@@ -130,7 +130,7 @@ help find an alternative solution on the controller side.
 	3. Scroll down 11 more rows and select the board *Arduino Nano ESP32*.
 3. Select the correct port. If you don't see any ports, try clicking on
 **Tools->Reload Board Data** and wait a few seconds.
-4. upload and pray
+4. upload the `mac_address` sketch, and if you're a Linux user, pray.
 
 If praying didn't work you might have gotten the lovely error message including
 these two red lines:
@@ -139,8 +139,8 @@ these two red lines:
 
 > `Failed uploading: uploading error: exit status 74`
 
-This will probably happen releatedly and randomly. Here is the annoying way of
-uploading when this happens:
+This will probably happen repeatedly and/or randomly. Here is the annoying way
+of uploading when this happens:
 1. Click the reset button on the ESP32. Shortly after, while the rainbow effect
 is animating, press it again. This will cause the rainbow effect to keep
 animating.
@@ -151,7 +151,8 @@ go back to step 1.
 few seconds.
 4. Try uploading your code again.
 5. Reboot the ESP32 by unplugging the USB cable and plugging it back in.
-6. If this works, unplugg and plugg back in the USB and see if it still works.
+6. If you see text printing in the serial output, unplugg and plugg back in the
+USB and see if you still get text printed.
 
 If you are having persistent issues with receiving serial output from the
 Arduino Nano ESP32, take a break, touch some grass and ask the Robot Group for
@@ -159,8 +160,8 @@ help.
 
 ### Get MAC-address
 To get the MAC-addresses of the ESP32 microcontrollers, upload the `mac_address`
-sketches and note down the six pairs of hexadecimal numbers from the serial
-output. Make sure to have the correct baud rate specified in the setup()
+sketches and note down the six hexadecimal numbers from the serial output. Make
+sure to have the same baud rate specified in the serial monitor as in the setup
 function.
 
 ### Pair ESP devices
@@ -171,3 +172,41 @@ before uploading. Do this for each ESP you upload to.
 To test if the pairing worked, connect both ESPs to your computer and open a
 serial monitor for each device. Try writing in the serial monitor and see if it
 appears on the other device.
+
+### Connect ESP32 to Romeo
+When the devices are paired, uncomment the line mentioned in the sketch for the
+ESP on the robot side. This will make it output serial on the pins specified in
+the sketch instead of out the USB port. We want to connect these pins via a
+logic level shifter to the Romeo so that the RX pin on one device goes to the TX
+pin on another, and vice versa. **WARNING:** if you don't use a logic level
+shifter you will damage the ESP32, possibly breaking it. Conect according to the
+circuit diagram below.
+
+```
+    Circuit diagram
+┌──────────────────────┐
+│                      │
+│  Arduino Nano ESP32  │
+│                      │
+│ GND 2(RX) 3(TX) 3.3V │
+└──┬────┬─────┬────┬───┘
+   │    │     │    │
+┌──┴────┴─────┴────┴──┐
+│ GND  A2  A1     LV  │
+│                     │
+│ Logic Level Shifter │
+│                     │
+│ GND  B2    B1   HV  │
+└──┬────┬─────┬────┬──┘
+   │     ╲   ╱     │
+   │      ╲ ╱      │
+   │       ╳       │
+   │      ╱ ╲      │
+   │     ╱   ╲     │
+┌──┴────┴─────┴────┴─┐
+│ GND 0(RX) 1(TX) 5V │
+│                    │
+│       Romeo        │
+│                    │
+└────────────────────┘
+```
