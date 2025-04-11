@@ -186,31 +186,37 @@ input[type=range] {
     border-radius: 0.25rem;
 }
 
-#servos {
+#servos,
+#motors {
     display: flex;
 }
 
-.servo {
+.servo,
+.motor {
     gap: 0.5rem;
     width: 17rem;
 }
 
-.servo__section {
+.servo__section,
+.motor__section {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.servo__row {
+.servo__row,
+.motor__row {
     display: flex;
     justify-content: space-between;
 }
 
-.servo__row :first-child {
+.servo__row :first-child,
+.motor__row :first-child {
     flex-grow: 1;
 }
 
-.servo input[type=range] {
+.servo input[type=range],
+.motor input[type=range] {
     margin-left: 0.5rem;
 }
 

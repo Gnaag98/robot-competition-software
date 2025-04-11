@@ -81,6 +81,14 @@ async def event_loop(serial: Serial, websocket):
 			if len(servos_pwm) > 0:
 				serial_send_bytes(serial, servo_start_flag, servos_pwm)
 
+			# Send motors message.
+			# TODO: Implement support for motors in the UI.
+			# NOTE: Uncomment this if you intend to implement parsing these
+			# messages on the receiving end.
+			#motors_pwm = message_json['motors'].values()
+			#if len(motors_pwm) > 0:
+			#	serial_send_bytes(serial, servo_start_flag, motors_pwm)
+
 			last_message_time = now
 
 

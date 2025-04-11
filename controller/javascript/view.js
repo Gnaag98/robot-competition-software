@@ -233,6 +233,220 @@ class ServoView {
     }
 }
 
+/** Visual representation of a motor. */
+class MotorView {
+    /**
+     * Root container for a motor.
+     *  
+     * @type {HTMLElement}
+     * */
+    #root;
+    
+    /**
+     * Create a visual representation of the motor and attach it to the DOM.
+     * 
+     * @param {Motor} motor 
+     */
+    constructor(motor) {
+        // Create a new card from the template.
+        /** @type {HTMLTemplateElement} */
+        const template = document.getElementById('motor-template');
+        /** @type {DocumentFragment} */
+        const fragment = template.content.cloneNode(true);
+        const card = fragment.firstElementChild;
+        // Store the element to reference it more easily later.
+        this.#root = card;
+
+        // Initialize the card header.
+        const header = card.querySelector('.card__header');
+        header.placeholder = `Motor ${motor.index}`;
+        header.value = motor.name;
+        header.addEventListener('input', () => {
+            motor.name = header.value;
+        });
+        
+        // Initialize slider values.
+        const pwmInput = this.#updateSlider('pwm', motor.pwm);
+        const minInput = this.#updateSlider('min', motor.min);
+        const maxInput = this.#updateSlider('max', motor.max);
+        pwmInput.addEventListener('input', event => {
+            motor.pwm = parseInt(event.target.value);
+        });
+        minInput.addEventListener('input', event => {
+            motor.min = parseInt(event.target.value);
+        });
+        maxInput.addEventListener('input', event => {
+            motor.max = parseInt(event.target.value);
+        });
+        
+        // Initialize gamepad bindings.
+        const bindingAxis = card.querySelector('.binding-axis');
+        this.#addBindingListeners(motor, motor.axis, bindingAxis);
+
+        // Add card to DOM.
+        document.getElementById('motors').appendChild(card);
+    }
+
+    /** Remove the visual representation of the motor from the DOM. */
+    remove() {
+        this.#root.remove();
+    }
+
+    /**
+     * Update the sliders to reflect changes made elsewhere.
+     * 
+     * @param {Motor} servo 
+     */
+    update(servo) {
+        this.#updateSlider('pwm', servo.pwm);
+        this.#updateSlider('min', servo.min);
+        this.#updateSlider('max', servo.max);
+    }
+
+    /**
+     * Update the bindings between gamepads and the servo.
+     * 
+     * @param {Motor} servo
+     */
+    updateBindings(servo) {
+        const gamepads = navigator.getGamepads();
+        this.#updateBinding(servo.axis, 'axis', gamepads);
+    }
+
+    /**
+     * Updates the slider position and displayed integer representation.
+     * 
+     * @param {string} name - "pwm", "min" or "max"
+     * @param {number} value - number in range 0-255.
+     * 
+     * @returns {HTMLElement} input element of row.
+     */
+    #updateSlider(name, value) {
+        const row = this.#root.querySelector(`.row-${name}`);
+        const valueElement = row.querySelector('.slider-value');
+        const inputElement = row.querySelector('.slider-input');
+        valueElement.textContent = Math.round(value);
+        inputElement.value = value;
+        return inputElement;
+    }
+
+    /**
+     * Add event listeners to the select elements for a specified binding.
+     * 
+     * @param {Motor} servo
+     * @param {MotorGamepadBinding} binding 
+     * @param {HTMLElement} bindingElement - container for the select elements.
+     */
+    #addBindingListeners(servo, binding, bindingElement) {
+        const gamepadSelect = bindingElement.querySelector('.select-gamepad');
+        const inputSelect = bindingElement.querySelector('.select-input');
+        const toIntOrNull = string => string ? parseInt(string) : null;
+        gamepadSelect.addEventListener('change', event => {
+            const previousIndex = binding.gamepadIndex;
+            binding.gamepadIndex = toIntOrNull(event.target.value);
+            // Reset the axis binding when switching gamepad.
+            if (binding.gamepadIndex != previousIndex) {
+                binding.inputIndex = null;
+            }
+            // Refresh the options.
+            this.updateBindings(servo);
+        });
+        inputSelect.addEventListener('change', event => {
+            binding.inputIndex = toIntOrNull(event.target.value);
+            // Refresh the options.
+            this.updateBindings(servo);
+        });
+    }
+
+    /**
+     * @param {MotorGamepadBinding} binding 
+     * @param {string} bindingName - Only "axis" supported for motors.
+     * @param {Gamepad[]} gamepads 
+     */
+    #updateBinding(binding, bindingName, gamepads) {
+        const bindingElement = this.#root.querySelector(
+            `.binding-${bindingName}`
+        );
+        
+        this.#updateGamepadSelect(binding, bindingElement, gamepads);
+        /** @type {Gamepad | undefined} */
+        const gamepad = gamepads[binding.gamepadIndex];
+        // There are no inputs for a disconnected gamepad. This is okay.
+        const inputs = gamepad?.axes;
+        this.#updateInputSelect(binding, bindingElement, inputs);
+    }
+
+    /**
+     * Update the dropdown list of gamepads.
+     * 
+     * @param {MotorGamepadBinding} binding 
+     * @param {HTMLElement} bindingElement - container for the select elements.
+     * @param {Gamepad[]} gamepads 
+     */
+    #updateGamepadSelect(binding, bindingElement, gamepads) {
+        const select = bindingElement.querySelector('.select-gamepad');
+        /** @type {HTMLOptionElement} */
+        const defaultOption = select.querySelector('option[value=""]');
+        // Reset the selected option.
+        defaultOption.selected = true;
+
+        // New options that will replace the old ones.
+        let options = [defaultOption];
+        for (const gamepad of gamepads) {
+            if (!gamepad) {
+                continue;
+            }
+            const i = gamepad.index;
+            const option = document.createElement('option');
+            option.value = i;
+            option.text = `Gamepad ${i}`;
+            if (i == binding.gamepadIndex) {
+                option.selected = true;
+            }
+            options.push(option);
+        }
+
+        // Replace options.
+        select.replaceChildren(...options);
+    }
+
+    /**
+     * Update the dropdown list of axes.
+     * 
+     * @param {MotorGamepadBinding} binding 
+     * @param {HTMLElement} bindingElement
+     * @param {number[]} inputs - axes.
+
+     */
+    #updateInputSelect(binding, bindingElement, inputs) {
+        const select = bindingElement.querySelector('.select-input');
+        /** @type {HTMLOptionElement} */
+        const defaultOption = select.querySelector('option[value=""]');
+        // Reset the selected option.
+        defaultOption.selected = true;
+
+        // New options that will replace the old ones.
+        let options = [defaultOption];
+        // If no inputs were supplied, just replace with the default option.
+        if (inputs) {
+            const prefix = 'Axis';
+            for (const i in inputs) {
+                const option = document.createElement('option');
+                // Select the first available gamepad by default.
+                option.value = i;
+                option.text = `${prefix} ${i}`;
+                if (i == binding.inputIndex) {
+                    option.selected = true;
+                }
+                options.push(option);
+            }
+        }
+
+        // Replace options.
+        select.replaceChildren(...options);
+    }
+}
+
 /** Visual representation of a gamepad. */
 class GamepadView {
     /**
@@ -363,6 +577,8 @@ class GamepadView {
 class View {
     /** @type {ServoView[]} */
     #servoViews = [];
+    /** @type {MotorView[]} */
+    #motorViews = [];
     /** @type {GamepadView[]} */
     #gamepadViews = [];
 
@@ -388,16 +604,33 @@ class View {
     /**
      * TODO: Add description.
      * 
+     * @param {Motor} motor 
+     */
+    addMotor(motor) {
+        const view = new MotorView(motor);
+        view.updateBindings(motor);
+        this.#motorViews.push(view);
+    }
+
+    /**
+     * TODO: Add description.
+     * 
      * @param {Servo[]} servos 
+     * @param {Motor[]} motors 
      * @param {Gamepad} gamepad 
      * @param {GamepadViewData} gamepadViewData 
      */
-    addGamepad(servos, gamepad, gamepadViewData) {
+    addGamepad(servos, motors, gamepad, gamepadViewData) {
         const gamepadView = new GamepadView(gamepad, gamepadViewData);
         for (const i in servos) {
             const servo = servos[i];
             const servoView = this.#servoViews[i];
             servoView.updateBindings(servo);
+        }
+        for (const i in motors) {
+            const motor = motors[i];
+            const motorView = this.#motorViews[i];
+            motorView.updateBindings(motor);
         }
         this.#gamepadViews.push(gamepadView);
     }
@@ -406,14 +639,21 @@ class View {
      * Update all views.
      * 
      * @param {Servo[]} servos 
+     * @param {Motor[]} motors 
      * @param {Gamepad[]} gamepads
      */
-    update(servos, gamepads) {
+    update(servos, motors, gamepads) {
         // Update servo views.
         for (const i in servos) {
             const servo = servos[i];
             const servoView = this.#servoViews[i];
             servoView.update(servo);
+        }
+        // Update motor views.
+        for (const i in motors) {
+            const motor = motors[i];
+            const motorView = this.#motorViews[i];
+            motorView.update(motor);
         }
         // Update gamepad views.
         for (const view of this.#gamepadViews) {
@@ -429,13 +669,22 @@ class View {
         this.#servoViews = [];
     }
 
+    /** Remove the visual representation of all motors from the DOM. */
+    clearMotors() {
+        for (const view of this.#motorViews) {
+            view.remove();
+        }
+        this.#motorViews = [];
+    }
+
     /**
      * Remove the view corresponding to the specified gamepad.
      * 
      * @param {Servo[]} servos 
+     * @param {Motor[]} motors 
      * @param {Gamepad} gamepad 
      */
-    removeGamepad(servos, gamepad) {
+    removeGamepad(servos, motors, gamepad) {
         // Index of the view to remove.
         let index = -1;
         for (const i in this.#gamepadViews) {
@@ -454,6 +703,12 @@ class View {
             const servo = servos[i];
             const servoView = this.#servoViews[i];
             servoView.updateBindings(servo);
+        }
+        // Update the motor bindings to reflect the missing gamepad.
+        for (const i in motors) {
+            const motor = motors[i];
+            const motorView = this.#motorViews[i];
+            motorView.updateBindings(motor);
         }
     }
 

@@ -7,6 +7,7 @@
     <link href="style.css" rel="stylesheet">
     <script defer type="text/javascript" src="javascript/server-connection.js"></script>
     <script defer type="text/javascript" src="javascript/servo.js"></script>
+    <script defer type="text/javascript" src="javascript/motor.js"></script>
     <script defer type="text/javascript" src="javascript/gamepad.js"></script>
     <script defer type="text/javascript" src="javascript/view.js"></script>
     <script defer type="text/javascript" src="javascript/robot-arm-controller.js"></script>
@@ -91,6 +92,41 @@
             </div>
         </div>
     </template>
+    <template id="motor-template">
+        <div class="motor card">
+            <input type="text" maxlength="16" class="card__header input-header">
+            <div class="motor__section">
+                <div class="motor__row row-pwm">
+                    <span>Val</span>
+                    <span class="slider-value"></span>
+                    <input type="range" min="0" max="255" step="1" class="slider-input">
+                </div>
+                <div class="motor__row row-min">
+                    <span>Min</span>
+                    <span class="slider-value"></span>
+                    <input type="range" min="0" max="255" step="1" class="slider-input">
+                </div>
+                <div class="motor__row row-max">
+                    <span>Max</span>
+                    <span class="slider-value"></span>
+                    <input type="range" min="0" max="255" step="1" class="slider-input">
+                </div>
+            </div>
+            <div class="motor__section">
+                <div class="motor__row">
+                    <span>Axis</span>
+                    <div class="binding-axis">
+                        <select class="select-gamepad">
+                            <option value="">Unbound</option>
+                        </select>
+                        <select class="select-input">
+                            <option value="">Unbound</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 </head>
 
 <body>
@@ -101,6 +137,7 @@
         <label for="load" class="menu__button">Load</label>
         <button id="save" class="menu__button">Save</button>
         <button id="add-servo" class="menu__button">Add Servo</button>
+        <button id="add-motor" class="menu__button">Add Motor</button>
     </div>
     <div id="gamepads" class="card-container">
         <div id="gamepad-placeholder" class="gamepad card">
@@ -108,6 +145,7 @@
         </div>
     </div>
     <div id="servos" class="card-container"></div>
+    <div id="motors" class="card-container"></div>
     <div id="logger" class="card"></div>
     </body>
 </html>

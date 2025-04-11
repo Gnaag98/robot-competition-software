@@ -5,25 +5,29 @@
  * https://github.com/frepet/Robot-Arm-Controller.
  * 
  * Reads servo messages (defined below) from serial and updates the attached
- * servos accordingly. Reading motor messages (also defined below) is left as
- * an exercise.
+ * servos accordingly.
+ * 
+ * Reading motor messages (also defined below) is left as
+ * an exercise. The data sent is simply the joystick positions, which you have
+ * to interpret yourself, i.e., does 0 mean stop and 255 full speed forward, or
+ * does 0 bean backwards, 127 stop and 255 forward?
  *
  * ┌─────────┬───────┬─Servo message────────────────────┐
  * │  BYTE   │ VALUE │               NOTE               │
  * ├─────────┼───────┼──────────────────────────────────┤
  * │    0    │   2   │ Start                            │
  * │    1    │ 0-255 │ Number of servos                 │
- * │ 2:end-1 │ 0-255 │ PWM-value                        │
+ * │ 2:end-1 │ 0-255 │ PWM-value(s)                     │
  * │   end   │ 0-255 │ Checksum = sum(PWM-values) % 256 │
  * └─────────┴───────┴──────────────────────────────────┘
- * ┌─────────┬───────┬────────────Motor message────────────────────────────────┐
- * │  BYTE   │ VALUE │                          NOTE                           │
- * ├─────────┼───────┼─────────────────────────────────────────────────────────┤
- * │    0    │   4   │ Start                                                   │
- * │    1    │ 0-255 │ Number of motors                                        │
- * │ 2:end-1 │ 0-255 │ PWM-value (0-126: reverse, 127: stop, 128-255: forward) │
- * │   end   │ 0-255 │ Checksum = sum(PWM-values) % 256                        │
- * └─────────┴───────┴─────────────────────────────────────────────────────────┘
+ * ┌─────────┬───────┬─Motor message───────────────────┐
+ * │  BYTE   │ VALUE │              NOTE               │
+ * ├─────────┼───────┼─────────────────────────────────┤
+ * │    0    │   4   │ Start                           │
+ * │    1    │ 0-255 │ Number of motors                │
+ * │ 2:end-1 │ 0-255 │ Joystick-position(s)            │
+ * │   end   │ 0-255 │ Checksum = sum(positions) % 256 │
+ * └─────────┴───────┴─────────────────────────────────┘
  */
 
 #include <Servo.h>

@@ -5,6 +5,8 @@ const view = new View();
 
 /** @type {Servo[]} */
 let servos = [];
+/** @type {Motor[]} */
+let motors = [];
 /** @type {GamepadViewData[]} */
 let gamepadSettings = [];
 // The Gamepad object represents the state of the gamepad at a specific point in
@@ -30,12 +32,15 @@ function setup() {
     document.getElementById('add-servo').addEventListener('click', () => {
         addServo();
     });
+    document.getElementById('add-motor').addEventListener('click', () => {
+        addMotor();
+    });
     // Start listening for gamepads connecting.
     window.addEventListener(
         'gamepadconnected', event => addGamepad(event.gamepad)
     );
     window.addEventListener('gamepaddisconnected', event => {
-        view.removeGamepad(servos, event.gamepad);
+        view.removeGamepad(servos, motors, event.gamepad);
     });
     // Start the main loop that should run on each frame.
     window.requestAnimationFrame(loop);
@@ -51,9 +56,10 @@ function loop() {
     // Respond to gamepad input.
     for (const gamepad of gamepads) {
         updateServos(gamepad, deltaTime);
+        updateMotors(gamepad, deltaTime);
     }
     // Update all views.
-    view.update(servos, gamepads);
+    view.update(servos, motors, gamepads);
     // Send data to the server.
     send();
     // Continue the loop on the next frame.
@@ -106,11 +112,21 @@ function send() {
      * @type {Object.<string, number>}
      */
     const servoMap = {};
+    /** Mapping from motor index to motor integer pwm value.
+     * @type {Object.<string, number>}
+     */
+    const motorMap = {};
+
     for (const servo of servos) {
         servoMap[servo.index] = Math.round(servo.pwm);
     }
+    for (const motor of motors) {
+        motorMap[motor.index] = Math.round(motor.pwm);
+    }
+
     const message = {
-        'servos': servoMap
+        'servos': servoMap,
+        'motors': motorMap
     };
     connection.send(message);
 }
@@ -118,6 +134,7 @@ function send() {
 /** @param {Event} event */
 function load(event) {
     clearServos();
+    clearMotors();
     clearGamepads();
     /** @type {File} */
     const file = event.target.files[0];
@@ -142,6 +159,9 @@ function load(event) {
         for (const servo of json['servos']) {
             addServo(servo);
         }
+        for (const motor of json['motors']) {
+            addMotor(motor);
+        }
     });
     // Start loading the file.
     reader.readAsText(file);
@@ -150,7 +170,8 @@ function load(event) {
 function save() {
     const json = {
         'gamepads': gamepadSettings,
-        'servos': servos
+        'servos': servos,
+        'motors': motors
     };
     const jsonString = JSON.stringify(json, null, 4);
     // Create a file and corresponding url.
@@ -171,6 +192,12 @@ function addServo(servoJson = null) {
     view.addServo(servo);
 }
 
+function addMotor(motorJson = null) {
+    const motor = motorJson ? Motor.fromJSON(motorJson) : new Motor();
+    motors.push(motor);
+    view.addMotor(motor);
+}
+
 /**
  * Add the gamepad and render a view for it.
  * 
@@ -183,7 +210,7 @@ function addGamepad(gamepad) {
         gamepadSettings[gamepadIndex] = new GamepadViewData(gamepad);
     }
     const gamepadViewData = gamepadSettings[gamepadIndex];
-    view.addGamepad(servos, gamepad, gamepadViewData);
+    view.addGamepad(servos, motors, gamepad, gamepadViewData);
 }
 
 /**
@@ -229,10 +256,44 @@ function updateServos(gamepad, deltaTime) {
     }
 }
 
+/**
+ * Update motors based on the inputs from a gamepad.
+ * 
+ * @param {Gamepad} gamepad Readonly representation of the gamepad as it was
+ * when it was last fetched.
+ * @param {number} deltaTime Time in milliseconds since last update.
+ */
+function updateMotors(gamepad, deltaTime) {
+    if (!gamepad) {
+        return;
+    }
+    for (const motor of motors) {
+        // Check axis binding.
+        if (gamepad.index == motor.axis.gamepadIndex) {
+            /** @type {number | undefined} */
+            const axisValue = gamepad.axes[motor.axis.inputIndex];
+            if (axisValue) {
+                // XXX: Hardcoded smaller deadzone.
+                if (Math.abs(axisValue) > gamepadAxisDeadzone / 4) {
+                    motor.pwm = (axisValue + 1) / 2 * 255;
+                } else {
+                    motor.pwm = 127;
+                }
+            }
+        }
+    }
+}
+
 function clearServos() {
     servos = [];
     Servo.resetIndices();
     view.clearServos();
+}
+
+function clearMotors() {
+    motors = [];
+    Motor.resetIndices();
+    view.clearMotors();
 }
 
 function clearGamepads() {
