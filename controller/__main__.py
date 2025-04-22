@@ -87,7 +87,7 @@ async def event_loop(serial: Serial, websocket):
 			# messages on the receiving end.
 			#motors_pwm = message_json['motors'].values()
 			#if len(motors_pwm) > 0:
-			#	serial_send_bytes(serial, servo_start_flag, motors_pwm)
+			#	serial_send_bytes(serial, motor_start_flag, motors_pwm)
 
 			last_message_time = now
 
