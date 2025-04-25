@@ -295,22 +295,22 @@ class MotorView {
     /**
      * Update the sliders to reflect changes made elsewhere.
      * 
-     * @param {Motor} servo 
+     * @param {Motor} motor 
      */
-    update(servo) {
-        this.#updateSlider('pwm', servo.pwm);
-        this.#updateSlider('min', servo.min);
-        this.#updateSlider('max', servo.max);
+    update(motor) {
+        this.#updateSlider('pwm', motor.pwm);
+        this.#updateSlider('min', motor.min);
+        this.#updateSlider('max', motor.max);
     }
 
     /**
-     * Update the bindings between gamepads and the servo.
+     * Update the bindings between gamepads and the motor.
      * 
-     * @param {Motor} servo
+     * @param {Motor} motor
      */
-    updateBindings(servo) {
+    updateBindings(motor) {
         const gamepads = navigator.getGamepads();
-        this.#updateBinding(servo.axis, 'axis', gamepads);
+        this.#updateBinding(motor.axis, 'axis', gamepads);
     }
 
     /**
@@ -333,11 +333,11 @@ class MotorView {
     /**
      * Add event listeners to the select elements for a specified binding.
      * 
-     * @param {Motor} servo
+     * @param {Motor} motor
      * @param {MotorGamepadBinding} binding 
      * @param {HTMLElement} bindingElement - container for the select elements.
      */
-    #addBindingListeners(servo, binding, bindingElement) {
+    #addBindingListeners(motor, binding, bindingElement) {
         const gamepadSelect = bindingElement.querySelector('.select-gamepad');
         const inputSelect = bindingElement.querySelector('.select-input');
         const toIntOrNull = string => string ? parseInt(string) : null;
@@ -346,15 +346,15 @@ class MotorView {
             binding.gamepadIndex = toIntOrNull(event.target.value);
             // Reset the axis binding when switching gamepad.
             if (binding.gamepadIndex != previousIndex) {
-                binding.inputIndex = null;
+                binding.axisIndex = null;
             }
             // Refresh the options.
-            this.updateBindings(servo);
+            this.updateBindings(motor);
         });
         inputSelect.addEventListener('change', event => {
-            binding.inputIndex = toIntOrNull(event.target.value);
+            binding.axisIndex = toIntOrNull(event.target.value);
             // Refresh the options.
-            this.updateBindings(servo);
+            this.updateBindings(motor);
         });
     }
 
@@ -435,7 +435,7 @@ class MotorView {
                 // Select the first available gamepad by default.
                 option.value = i;
                 option.text = `${prefix} ${i}`;
-                if (i == binding.inputIndex) {
+                if (i == binding.axisIndex) {
                     option.selected = true;
                 }
                 options.push(option);
@@ -456,14 +456,14 @@ class GamepadView {
      */
     #gamepadViewData;
     /**
-     * Root container for a servo.
+     * Root container for a motor.
      *  
      * @type {HTMLElement}
      * */
     #root;
     
     /**
-     * Create a visual representation of the servo and attach it to the DOM.
+     * Create a visual representation of the motor and attach it to the DOM.
      * 
      * @param {Gamepad} gamepad 
      * @param {GamepadViewData} gamepadViewData 
