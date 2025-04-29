@@ -10,7 +10,7 @@ import websockets
 # The baud rate is the speed in bits per second (bps) of the serial
 # communication over USB. The baud rate set here should match what is being used
 # on the attached device (Arduino).
-serial_baud_rate = 115200
+serial_baud_rate = 19200
 # The websocket port is used to communicate with the webpage using WebSocket. To
 # change the port you must edit both here and in the Javascript code.
 websocket_port = 8765
