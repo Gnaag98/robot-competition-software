@@ -271,7 +271,7 @@ function updateMotors(gamepad, deltaTime) {
         // Check axis binding.
         if (gamepad.index == motor.axis.gamepadIndex) {
             /** @type {number | undefined} */
-            const axisValue = gamepad.axes[motor.axis.inputIndex];
+            const axisValue = gamepad.axes[motor.axis.axisIndex];
             if (axisValue) {
                 // XXX: Hardcoded smaller deadzone.
                 if (Math.abs(axisValue) > gamepadAxisDeadzone / 4) {
